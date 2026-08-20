@@ -1,0 +1,202 @@
+.wrapper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  margin-bottom: 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient top accent line */
+.wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-accent);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.platformHints {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.hintSep {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+/* Expiry selector */
+.durationWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.durationLabel {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.durationSelect {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.durationSelect:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
+}
+
+.customDateInput {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+}
+
+.customDateInput:focus {
+  border-color: var(--color-accent);
+}
+
+/* Form row */
+.form {
+  display: flex;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  transition: box-shadow 0.2s ease;
+}
+
+.formFocused {
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  border-radius: var(--radius-md);
+}
+
+.inputWrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px 12px 40px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Submit button */
+.button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 22px;
+  background: var(--gradient-accent);
+  color: var(--color-btn-text);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.button:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 4px 16px var(--color-accent-glow);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(128, 128, 128, 0.3);
+  border-top-color: var(--color-btn-text);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-danger);
+}

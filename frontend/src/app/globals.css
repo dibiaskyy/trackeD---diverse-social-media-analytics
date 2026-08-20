@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root,
+[data-theme="dark"] {
+  /* Obsidian / True Black Backgrounds */
+  --color-bg: #09090b;
+  --color-surface: #121215;
+  --color-surface-elevated: #18181b;
+  --color-surface-hover: #222226;
+
+  /* Crisp Neutral Borders */
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.07);
+
+  /* Sidebar */
+  --color-sidebar: #09090b;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --color-sidebar-active: rgba(255, 255, 255, 0.12);
+  --color-sidebar-icon: #71717a;
+
+  /* Typography */
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+  --color-text-muted: #3f3f46;
+
+  /* High-Contrast Crisp Monochrome Accent */
+  --color-accent: #ffffff;
+  --color-accent-hover: #e4e4e7;
+  --color-accent-soft: rgba(255, 255, 255, 0.10);
+  --color-accent-glow: rgba(255, 255, 255, 0.15);
+  --gradient-accent: linear-gradient(135deg, #ffffff 0%, #d4d4d8 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #f4f4f5 0%, #a1a1aa 100%);
+  --color-btn-text: #09090b;
+  --color-logo-icon: #09090b;
+  --color-chart-grid: rgba(255, 255, 255, 0.05);
+
+  /* Platform colors */
+  --color-tiktok: #ffffff;
+  --color-tiktok-soft: rgba(255, 255, 255, 0.14);
+  --color-tiktok-bg: rgba(255, 255, 255, 0.08);
+  --color-youtube: #ff0000;
+  --color-youtube-soft: rgba(255, 0, 0, 0.15);
+  --color-youtube-bg: rgba(255, 0, 0, 0.08);
+  --color-facebook: #1877f2;
+  --color-facebook-soft: rgba(24, 119, 242, 0.15);
+  --color-facebook-bg: rgba(24, 119, 242, 0.08);
+
+  /* Semantic */
+  --color-danger: #f85149;
+  --color-danger-soft: rgba(248, 81, 73, 0.12);
+  --color-success: #3fb950;
+  --color-success-soft: rgba(63, 185, 80, 0.12);
+  --color-warning: #d29922;
+  --color-warning-soft: rgba(210, 153, 34, 0.12);
+  --color-info: #e4e4e7;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 24px rgba(255, 255, 255, 0.10);
+
+  /* Font */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+[data-theme="light"] {
+  /* Crisp Clean Light Theme */
+  --color-bg: #f4f4f6;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f9fafb;
+  --color-surface-hover: #f3f4f6;
+
+  /* Crisp Light Borders */
+  --color-border: rgba(0, 0, 0, 0.12);
+  --color-border-subtle: rgba(0, 0, 0, 0.08);
+
+  /* Sidebar */
+  --color-sidebar: #ffffff;
+  --color-sidebar-hover: rgba(0, 0, 0, 0.05);
+  --color-sidebar-active: rgba(0, 0, 0, 0.08);
+  --color-sidebar-icon: #52525b;
+
+  /* Typography */
+  --color-text-primary: #09090b;
+  --color-text-secondary: #52525b;
+  --color-text-tertiary: #71717a;
+  --color-text-muted: #a1a1aa;
+
+  /* Crisp Monochrome Accent */
+  --color-accent: #09090b;
+  --color-accent-hover: #27272a;
+  --color-accent-soft: rgba(0, 0, 0, 0.06);
+  --color-accent-glow: rgba(0, 0, 0, 0.10);
+  --gradient-accent: linear-gradient(135deg, #09090b 0%, #27272a 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #18181b 0%, #3f3f46 100%);
+  --color-btn-text: #ffffff;
+  --color-logo-icon: #ffffff;
+  --color-chart-grid: rgba(0, 0, 0, 0.06);
+
+  /* Platform colors */
+  --color-tiktok: #09090b;
+  --color-tiktok-soft: rgba(9, 9, 11, 0.08);
+  --color-tiktok-bg: rgba(9, 9, 11, 0.05);
+  --color-youtube: #e02424;
+  --color-youtube-soft: rgba(224, 36, 36, 0.12);
+  --color-youtube-bg: rgba(224, 36, 36, 0.06);
+  --color-facebook: #1877f2;
+  --color-facebook-soft: rgba(24, 119, 242, 0.15);
+  --color-facebook-bg: rgba(24, 119, 242, 0.08);
+  --color-facebook-soft: rgba(24, 119, 242, 0.12);
+  --color-facebook-bg: rgba(24, 119, 242, 0.06);
+
+  /* Semantic */
+  --color-danger: #e02424;
+  --color-danger-soft: rgba(224, 36, 36, 0.10);
+  --color-success: #16a34a;
+  --color-success-soft: rgba(22, 163, 74, 0.10);
+  --color-warning: #d97706;
+  --color-warning-soft: rgba(217, 119, 6, 0.10);
+  --color-info: #0284c7;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.25);
+  border-radius: 100px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.4);
+}
+
+/* Hide Next.js dev overlay indicator button */
+#__next-build-watcher,
+[data-nextjs-dev-tools-button],
+[data-nextjs-dev-tools-indicator],
+[data-nextjs-toast],
+nextjs-portal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
