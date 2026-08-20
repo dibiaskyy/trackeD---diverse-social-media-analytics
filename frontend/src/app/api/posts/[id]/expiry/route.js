@@ -6,7 +6,7 @@ export async function PATCH(req, { params }) {
     const { id } = await params
     const body = await req.json()
     const trackUntil = body.track_until || null
-    const updated = updatePostExpiry(id, trackUntil)
+    const updated = await updatePostExpiry(id, trackUntil)
 
     return NextResponse.json({
       message: 'Expiration schedule updated successfully.',

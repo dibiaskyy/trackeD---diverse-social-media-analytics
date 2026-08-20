@@ -4,7 +4,7 @@ import { getPostById, deletePost } from '../../../lib/db'
 export async function GET(req, { params }) {
   try {
     const { id } = await params
-    const postData = getPostById(id)
+    const postData = await getPostById(id)
     if (!postData) {
       return NextResponse.json({ error: 'Post not found.' }, { status: 404 })
     }
@@ -17,7 +17,7 @@ export async function GET(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const { id } = await params
-    deletePost(id)
+    await deletePost(id)
     return NextResponse.json({ message: 'Post untracked and deleted successfully.' })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 404 })

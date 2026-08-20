@@ -5,13 +5,13 @@ import { scrapeUrl } from '../../../../lib/scraper'
 export async function POST(req, { params }) {
   try {
     const { id } = await params
-    const postData = getPostById(id)
+    const postData = await getPostById(id)
     if (!postData) {
       return NextResponse.json({ error: 'Post not found.' }, { status: 404 })
     }
 
     const stats = await scrapeUrl(postData.post.post_url)
-    const updated = addSnapshot(id, stats)
+    const updated = await addSnapshot(id, stats)
 
     return NextResponse.json({
       id: updated.post.id,

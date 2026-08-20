@@ -43,34 +43,38 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetch('/api/posts')
-      .then((res) => res.json())
-      .then((data) => setPosts(data))
-      .catch((err) => console.error(err))
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setPosts(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error('Failed to load posts:', err)
+        setPosts([])
+      })
       .finally(() => setLoaded(true))
   }, [])
 
   const handlePostAdded = (newPost) => {
-    setPosts((prev) => [newPost, ...prev])
+    setPosts((prev) => [newPost, ...(Array.isArray(prev) ? prev : [])])
     addToast('Post added and tracking started!', 'success')
   }
 
   const handlePostUpdated = (updatedPost) => {
     setPosts((prev) =>
-      prev.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+      (Array.isArray(prev) ? prev : []).map((p) => (p.id === updatedPost.id ? updatedPost : p))
     )
   }
 
   const handlePostDeleted = (deletedId) => {
-    setPosts((prev) => prev.filter((p) => p.id !== deletedId))
+    setPosts((prev) => (Array.isArray(prev) ? prev : []).filter((p) => p.id !== deletedId))
     addToast('Post untracked and removed', 'info')
   }
 
   const handleRefreshAll = async () => {
     setRefreshingAll(true)
     addToast('Refreshing all posts…', 'info')
+    const currentPosts = Array.isArray(posts) ? posts : []
     try {
       const results = await Promise.allSettled(
-        posts.map((p) =>
+        currentPosts.map((p) =>
           fetch(`/api/posts/${p.id}/refresh`, { method: 'POST' })
             .then((r) => r.json())
         )
@@ -83,7 +87,7 @@ export default function Dashboard() {
       })
       if (updated.length > 0) {
         setPosts((prev) =>
-          prev.map((p) => {
+          (Array.isArray(prev) ? prev : []).map((p) => {
             const u = updated.find((u) => u.id === p.id)
             return u || p
           })
@@ -99,7 +103,9 @@ export default function Dashboard() {
     }
   }
 
-  const totals = posts.reduce(
+  const postList = Array.isArray(posts) ? posts : []
+
+  const totals = postList.reduce(
     (acc, p) => ({
       views: acc.views + (p.latest?.views ?? 0),
       likes: acc.likes + (p.latest?.likes ?? 0),
@@ -109,7 +115,7 @@ export default function Dashboard() {
     { views: 0, likes: 0, comments: 0, shares: 0 }
   )
 
-  const hasData = posts.some((p) => p.latest)
+  const hasData = postList.some((p) => p.latest)
 
   const barData = [
     { name: 'Views', value: totals.views },
@@ -120,17 +126,17 @@ export default function Dashboard() {
 
   // Filter + sort
   const filteredPosts = useMemo(() => {
-    let result = filter === 'all' ? posts : posts.filter((p) => p.platform === filter)
+    let result = filter === 'all' ? postList : postList.filter((p) => p.platform === filter)
     return [...result].sort((a, b) => {
       if (sort === 'views') return (b.latest?.views ?? 0) - (a.latest?.views ?? 0)
       if (sort === 'likes') return (b.latest?.likes ?? 0) - (a.latest?.likes ?? 0)
       return new Date(b.created_at) - new Date(a.created_at) // newest
     })
-  }, [posts, sort, filter])
+  }, [postList, sort, filter])
 
-  const tiktokCount = posts.filter((p) => p.platform === 'tiktok').length
-  const youtubeCount = posts.filter((p) => p.platform === 'youtube').length
-  const facebookCount = posts.filter((p) => p.platform === 'facebook').length
+  const tiktokCount = postList.filter((p) => p.platform === 'tiktok').length
+  const youtubeCount = postList.filter((p) => p.platform === 'youtube').length
+  const facebookCount = postList.filter((p) => p.platform === 'facebook').length
 
   return (
     <main className={styles.page}>

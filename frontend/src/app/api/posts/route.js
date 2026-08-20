@@ -4,9 +4,10 @@ import { detectPlatform, scrapeUrl } from '../../lib/scraper'
 
 export async function GET() {
   try {
-    const posts = getAllPosts()
-    return NextResponse.json(posts)
+    const posts = await getAllPosts()
+    return NextResponse.json(Array.isArray(posts) ? posts : [])
   } catch (err) {
+    console.error('GET /api/posts error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
@@ -36,15 +37,17 @@ export async function POST(req) {
       console.warn('Initial scraping warning:', e.message)
     }
 
-    const newPost = createPost({
+    const newPost = await createPost({
       platform,
       post_url: url,
       track_until: trackUntil,
       stats,
     })
 
-    return NextResponse.json(newPost.post, { status: 201 })
+    const payload = newPost?.post || newPost
+    return NextResponse.json(payload, { status: 201 })
   } catch (err) {
+    console.error('POST /api/posts error:', err)
     return NextResponse.json({ error: err.message }, { status: 400 })
   }
 }
