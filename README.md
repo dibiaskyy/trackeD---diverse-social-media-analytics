@@ -6,7 +6,7 @@ A standalone social media analytics tool that tracks public video performance ac
 
 ## What is trackeD?
 
-trackeD automates metrics tracking for public video links. It uses a headless browser scraper to extract exact, unrounded engagement metrics directly from public URLs, logs periodic snapshots into a database, and visualizes trends and engagement rates in an interactive dashboard.
+trackeD automates metrics tracking for public video links. It uses a headless browser scraper to extract exact, unrounded engagement metrics directly from public URLs, logs periodic snapshots into a database (Aiven Cloud MySQL or local/Docker MySQL), and visualizes trends and engagement rates in an interactive dashboard.
 
 ---
 
@@ -27,28 +27,17 @@ trackeD automates metrics tracking for public video links. It uses a headless br
 
 ---
 
-## System Architecture
-
-```mermaid
-graph TD
-    User([Browser]) <--> Frontend[Next.js Dashboard :3000]
-    Frontend <--> Backend[Laravel 11 REST API :8000]
-    Backend <--> Database[(MySQL 8 Database :3306)]
-    Backend <--> Scraper[Playwright Scraper :4000]
-    Scraper <--> Web[TikTok / YouTube / Facebook]
-```
-
-### Tech Stack
-- **Frontend**: Next.js 15, React 19, Recharts, jsPDF, CSS Modules
-- **Backend**: Laravel 11, Eloquent ORM, MySQL 8
-- **Scraper**: Node.js, Express, Playwright (Headless Chromium)
-- **Deployment**: Docker Compose
+## Tech Stack
+- **Frontend & API**: Next.js 16 (Turbopack), React 19, Recharts, jsPDF, CSS Modules
+- **Database & ORM**: MySQL 8 / Aiven Cloud MySQL, `mysql2` connection pooling, Prisma (Studio & Migrations)
+- **Scraper Service**: Node.js, Express, Playwright (Headless Chromium)
+- **Containerization**: Docker & Docker Compose (Optional)
 
 ---
 
 ## Quick Start
 
-### Option A: Local Development (Recommended)
+### Option A: Local Development with Aiven / Cloud MySQL (Recommended)
 
 1. **Install Dependencies**
    ```bash
@@ -60,15 +49,28 @@ graph TD
 2. **Configure Environment**
    Create `frontend/.env.local` (or copy from `frontend/.env.example`):
    ```env
-   DATABASE_URL="mysql://avnadmin:YOUR_PASSWORD@YOUR_HOST:PORT/defaultdb?ssl-mode=REQUIRED"
-   SCRAPER_URL="http://localhost:4000"
+   DATABASE_URL=mysql://avnadmin:YOUR_PASSWORD@YOUR_AIVEN_HOST:PORT/defaultdb?ssl-mode=REQUIRED
+   SCRAPER_URL=http://localhost:4000
    ```
 
-3. **Run Dev Server**
+3. **Sync Database Tables**
+   ```bash
+   cd frontend
+   npx prisma db push
+   cd ..
+   ```
+
+4. **Run Dev Server**
    ```bash
    npm run dev
    ```
    *This concurrently starts both the Next.js frontend (`:3000`) and the scraper microservice (`:4000`).*
+
+5. **Open Database GUI (Optional)**
+   ```bash
+   cd frontend && npx prisma studio
+   ```
+   *Visual database management at `http://localhost:5555`.*
 
 ---
 
@@ -79,18 +81,22 @@ graph TD
    docker compose up -d --build
    ```
 
-2. **Run Migrations (if using backend service)**
+2. **Run Backend Migrations**
    ```bash
    docker compose exec backend php artisan migrate --force
    ```
 
 ---
 
-### Access URLs
-- **Web App**: `http://localhost:3000`
-- **Scraper Service**: `http://localhost:4000`
-- **REST API** *(Docker backend)*: `http://localhost:8000/api`
-- **phpMyAdmin** *(Docker)*: `http://localhost:8080`
+## Access URLs
+
+| Service | URL | Description |
+| :--- | :--- | :--- |
+| **Web App** | `http://localhost:3000` | Main analytics dashboard |
+| **Scraper Microservice** | `http://localhost:4000` | Playwright scraping service |
+| **Prisma Studio** | `http://localhost:51212` | Visual database manager (Local mode) |
+| **REST API** | `http://localhost:8000/api` | Laravel REST API (Docker mode) |
+| **phpMyAdmin** | `http://localhost:8080` | MySQL database manager (Docker mode) |
 
 ---
 
@@ -107,7 +113,16 @@ graph TD
 
 ---
 
+## Repository Branches
+
+- **`main`**: The primary branch with full support for `npm run dev`, Aiven Cloud MySQL, and Docker.
+- **`npm-and-docker-version`**: Standalone & containerized setup.
+- **`docker-version`**: Dedicated Docker-only environment.
+
+---
+
 ## License
 
 MIT © [dibiaskyy](https://github.com/dibiaskyy)
+
 
