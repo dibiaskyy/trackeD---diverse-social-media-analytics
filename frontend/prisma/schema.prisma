@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model TrackedPost {
+  id            Int            @id @default(autoincrement())
+  platform      String
+  post_url      String         @db.Text
+  caption       String?        @db.Text
+  thumbnail_url String?        @db.Text
+  track_until   DateTime?
+  posted_at     DateTime?
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  snapshots     PostSnapshot[]
+
+  @@map("tracked_posts")
+}
+
+model PostSnapshot {
+  id              Int         @id @default(autoincrement())
+  tracked_post_id Int
+  views           BigInt      @default(0)
+  likes           BigInt      @default(0)
+  comments        BigInt      @default(0)
+  shares          BigInt      @default(0)
+  fetched_at      DateTime    @default(now())
+  tracked_post    TrackedPost @relation(fields: [tracked_post_id], references: [id], onDelete: Cascade)
+
+  @@index([tracked_post_id])
+  @@map("post_snapshots")
+}

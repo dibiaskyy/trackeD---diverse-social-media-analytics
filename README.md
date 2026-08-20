@@ -1,120 +1,113 @@
 # trackeD
 
-A lightweight analytics tool for tracking public video metrics across TikTok, YouTube, and Facebook without logins or API keys.
-
-Developed by [dibiaskyy](https://github.com/dibiaskyy).
+A standalone social media analytics tool that tracks public video performance across **TikTok**, **YouTube**, and **Facebook** without requiring platform logins or API keys.
 
 ---
 
-## Overview
+## What is trackeD?
 
-trackeD tracks public video posts over time. It uses a headless scraper to pull metrics directly from public URLs, stores snapshots in a database, and displays engagement trends in a clean dashboard.
-
----
-
-## Features
-
-### Public URL Tracking
-- **TikTok**: Standard video links and shortlinks (`vt.tiktok.com`, `tiktok.com/@user/video/...`).
-- **YouTube**: Videos, Shorts, and shortlinks (`youtu.be`, `watch?v=`, `shorts/`).
-- **Facebook**: Public Reels and video posts (`facebook.com/share/r/...`, `facebook.com/reel/...`).
-
-### Unrounded Metric Parsing
-- Reads internal page JSON state (`video_view_count`, `userInteractionCount`, `playCount`, `reaction_count`) to capture exact numbers instead of rounded abbreviations.
-- Tracks views, likes/reactions, comments, shares, video captions, publish dates, and thumbnails.
-
-### Per-Video Scheduling
-- Set tracking duration presets (1d, 3d, 7d, 14d, 30d, or custom date).
-- Live countdown badge per video.
-- Automatically untracks and removes expired videos.
-
-### Metric Distribution Charts
-- Independent scaling for views, likes, comments, and shares so smaller metrics remain visible.
-- Filter by individual metric or view all four together.
-- Leaderboard table sorted by performance.
-
-### Engagement Rate (ERR)
-Calculated using the public engagement rate formula:
-
-$$\text{ERR} = \frac{\text{Likes} + \text{Comments} + \text{Shares}}{\text{Views}} \times 100$$
-
-*(YouTube calculation omits shares since YouTube does not show public share counts).*
-
-### PDF Export
-- Generates formatted A4 PDF reports directly in the browser with summary cards, platform tables, and video rankings.
-
-### Theme
-- Obsidian dark mode and high-contrast light mode with platform color accents.
+trackeD automates metrics tracking for public video links. It uses a headless browser scraper to extract exact, unrounded engagement metrics directly from public URLs, logs periodic snapshots into a database, and visualizes trends and engagement rates in an interactive dashboard.
 
 ---
 
-## Architecture
+## Core Features
+
+- **Multi-Platform Support**:
+  - **TikTok**: Standard video links & shortlinks (`vt.tiktok.com`, `tiktok.com/@user/video/...`)
+  - **YouTube**: Regular videos, Shorts, and shortlinks (`youtu.be`, `watch?v=`, `shorts/`)
+  - **Facebook**: Public Reels and video posts (`facebook.com/reel/...`, `facebook.com/share/r/...`)
+- **Accurate Metric Parsing**: Extracts exact values (views, likes/reactions, comments, shares, publish dates, captions, thumbnails) directly from raw page state.
+- **Engagement Rate (ERR)**: Calculates public engagement rates automatically:
+  $$\text{ERR} = \frac{\text{Likes} + \text{Comments} + \text{Shares}}{\text{Views}} \times 100$$
+  *(YouTube omits shares since public counts are not exposed).*
+- **Tracking Schedules & Auto-Cleanup**: Set tracking windows (1d, 3d, 7d, 14d, 30d, or custom date) with live countdown badges and automatic removal upon expiration.
+- **Visual Analytics**: Interactive multi-metric charts with independent scaling, platform filters, and performance leaderboards.
+- **Instant PDF Export**: Generate formatted single/multi-page A4 PDF summary reports right in the browser.
+- **Dark & Light Mode**: Obsidian dark mode and high-contrast light mode.
+
+---
+
+## System Architecture
 
 ```mermaid
 graph TD
-    User([Browser]) <--> NextJS[Next.js Frontend :3000]
-    NextJS <--> LaravelAPI[Laravel API :8000]
-    LaravelAPI <--> MySQL[(MySQL Database :3306)]
-    LaravelAPI <--> Scraper[Playwright Scraper :4000]
-    Scraper <--> PublicWeb[TikTok / YouTube / Facebook]
+    User([Browser]) <--> Frontend[Next.js Dashboard :3000]
+    Frontend <--> Backend[Laravel 11 REST API :8000]
+    Backend <--> Database[(MySQL 8 Database :3306)]
+    Backend <--> Scraper[Playwright Scraper :4000]
+    Scraper <--> Web[TikTok / YouTube / Facebook]
 ```
 
-- **Frontend**: Next.js, React, Recharts, jsPDF, CSS Modules
-- **Backend**: Laravel 11, Eloquent, MySQL 8
-- **Scraper**: Node.js, Express, Playwright
-- **Runtime**: Docker Compose
+### Tech Stack
+- **Frontend**: Next.js 15, React 19, Recharts, jsPDF, CSS Modules
+- **Backend**: Laravel 11, Eloquent ORM, MySQL 8
+- **Scraper**: Node.js, Express, Playwright (Headless Chromium)
+- **Deployment**: Docker Compose
 
 ---
 
-## Setup
+## Quick Start
 
-### Prerequisites
-- Docker & Docker Compose
-- Git
+### Option A: Local Development (Recommended)
 
-### 1. Clone
-```bash
-git clone https://github.com/dibiaskyy/trackeD.git
-cd trackeD
-```
+1. **Install Dependencies**
+   ```bash
+   npm install
+   npm install --prefix frontend
+   npm install --prefix scraper-service
+   ```
 
-### 2. Start Containers
-```bash
-docker compose up -d --build
-```
+2. **Configure Environment**
+   Create `frontend/.env.local` (or copy from `frontend/.env.example`):
+   ```env
+   DATABASE_URL="mysql://avnadmin:YOUR_PASSWORD@YOUR_HOST:PORT/defaultdb?ssl-mode=REQUIRED"
+   SCRAPER_URL="http://localhost:4000"
+   ```
 
-### 3. Run Migrations
-```bash
-docker compose exec backend php artisan migrate --force
-```
-
-### 4. Ports
-- Web App: http://localhost:3000
-- REST API: http://localhost:8000/api
-- phpMyAdmin: http://localhost:8080
+3. **Run Dev Server**
+   ```bash
+   npm run dev
+   ```
+   *This concurrently starts both the Next.js frontend (`:3000`) and the scraper microservice (`:4000`).*
 
 ---
 
-## API
+### Option B: Docker Compose
 
-| Method | Route | Description |
+1. **Launch Containers**
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. **Run Migrations (if using backend service)**
+   ```bash
+   docker compose exec backend php artisan migrate --force
+   ```
+
+---
+
+### Access URLs
+- **Web App**: `http://localhost:3000`
+- **Scraper Service**: `http://localhost:4000`
+- **REST API** *(Docker backend)*: `http://localhost:8000/api`
+- **phpMyAdmin** *(Docker)*: `http://localhost:8080`
+
+---
+
+## REST API Reference
+
+| Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/posts` | List tracked posts with latest metrics |
-| `POST` | `/api/posts` | Track and scrape a new URL |
-| `GET` | `/api/posts/{id}` | Get post history and snapshots |
-| `POST` | `/api/posts/{id}/refresh` | Fetch fresh metrics |
-| `PATCH` | `/api/posts/{id}/expiry` | Update or remove expiration date |
-| `DELETE` | `/api/posts/{id}` | Untrack and delete post |
-
----
-
-## Author
-
-- [dibiaskyy](https://github.com/dibiaskyy)
-- trackeD v1.0 (2026)
+| `GET` | `/api/posts` | List all tracked posts with latest metrics |
+| `POST` | `/api/posts` | Submit a new URL to track and scrape |
+| `GET` | `/api/posts/{id}` | Get post details and historical snapshots |
+| `POST` | `/api/posts/{id}/refresh` | Fetch fresh real-time metrics |
+| `PATCH` | `/api/posts/{id}/expiry` | Update or remove tracking expiration date |
+| `DELETE` | `/api/posts/{id}` | Untrack and delete post data |
 
 ---
 
 ## License
 
-MIT
+MIT © [dibiaskyy](https://github.com/dibiaskyy)
+

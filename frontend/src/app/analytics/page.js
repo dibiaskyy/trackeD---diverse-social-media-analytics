@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
   const [activeMetricTab, setActiveMetricTab] = useState('all')
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/posts')
+    fetch('/api/posts')
       .then((res) => res.json())
       .then((data) => setPosts(data))
       .catch((err) => console.error(err))

@@ -100,11 +100,11 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted, onRefresh
     setRefreshing(true)
 
     try {
-      const res = await fetch(`http://localhost:8000/api/posts/${post.id}/refresh`, {
+      const res = await fetch(`/api/posts/${post.id}/refresh`, {
         method: 'POST',
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Failed to refresh')
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to refresh')
       onPostUpdated(data)
       setJustRefreshed(true)
       onRefreshSuccess?.(`Refreshed: ${post.platform} post`)
@@ -119,7 +119,7 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted, onRefresh
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/posts/${post.id}`, {
+      const res = await fetch(`/api/posts/${post.id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete post')
@@ -142,7 +142,7 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted, onRefresh
   const isFacebook = post.platform === 'facebook'
   const thumbnailUrl = getPostThumbnail(post)
 
-  // Metrics to display: YouTube does NOT track share counts, but TikTok and Facebook do!
+  // Metrics to display: TikTok and Facebook always show Views, Likes, Comments, and Shares
   const hasShares = isTikTok || isFacebook
   const statList = [
     { key: 'views', label: 'Views', value: latest?.views },
@@ -276,7 +276,7 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted, onRefresh
             )}
 
             {latest ? (
-              <div className={`${styles.stats} ${isYouTube ? styles.stats3Col : styles.stats4Col}`}>
+              <div className={`${styles.stats} ${hasShares ? styles.stats4Col : styles.stats3Col}`}>
                 {statList.map(({ key, label, value }) => (
                   <div key={key} className={styles.stat}>
                     <span className={styles.statIcon}>{STAT_ICONS[key]}</span>

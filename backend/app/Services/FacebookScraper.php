@@ -190,12 +190,18 @@ class FacebookScraper
 
     private function extractShares(string $html, array $meta): int
     {
-        // 1. Prioritize EXACT unrounded share count in JSON structures
-        if (preg_match('/"(?:share_count|shares_count|sharesCount|total_share_count)":\s*(?:\{"count":)?(\d+)/i', $html, $matches)) {
+        // 1. Direct DOM / runtime extraction from Playwright (most accurate for dynamic FB web)
+        if (!empty($meta['domShares'])) {
+            $parsed = $this->parseFormattedCount($meta['domShares']);
+            if ($parsed > 0) return $parsed;
+        }
+
+        // 2. Exact unrounded share count in JSON or escaped JSON structures
+        if (preg_match('/(?:\\"|")?(?:share_count|shares_count|sharesCount|total_share_count|reshare_count|reshares|unified_stories_reshare_count|substories_count)(?:\\"|")?\s*:\s*(?:\{(?:\\"|")?(?:count|total_count)(?:\\"|")?:\s*)?(?:\\"|")?(\d+)(?:\\"|")?/i', $html, $matches)) {
             return (int) $matches[1];
         }
 
-        if (preg_match('/"reshares":\s*\{"count":\s*(\d+)\}/i', $html, $matches)) {
+        if (preg_match('/(?:\\"|")?interactionType(?:\\"|")?:\s*(?:\\"|")?https?:\\\\\/\\\\\/schema\.org\\\\\/ShareAction(?:\\"|")?[^}]*?(?:\\"|")?userInteractionCount(?:\\"|")?:\s*(?:\\"|")?(\d+)(?:\\"|")?/i', $html, $matches)) {
             return (int) $matches[1];
         }
 
@@ -203,32 +209,29 @@ class FacebookScraper
             return (int) $matches[1];
         }
 
-        // 2. Full unrounded count in aria-label or HTML
-        if (preg_match('/(?:aria-label|title)=["\']([\d,]{4,})\s*(?:shares|Shares|share|Share)["\']/i', $html, $matches)) {
-            return (int) str_replace(',', '', $matches[1]);
-        }
-
-        if (preg_match('/"i18n_share_count":\s*"([^"]+)"/i', $html, $matches)) {
+        if (preg_match('/(?:\\"|")?(?:i18n_share_count|share_count_reduced)(?:\\"|")?\s*:\s*(?:\\"|")?([^\\"]+)(?:\\"|")?/i', $html, $matches)) {
             return $this->parseFormattedCount($matches[1]);
         }
 
-        if (preg_match('/"share_count_reduced":\s*"([^"]+)"/i', $html, $matches)) {
-            return $this->parseFormattedCount($matches[1]);
-        }
-
-        // 3. Fallback: Direct DOM extraction from Playwright
-        if (!empty($meta['domShares'])) {
-            return $this->parseFormattedCount($meta['domShares']);
+        // 3. Full count in aria-label or title (e.g. aria-label="12 shares")
+        if (preg_match('/(?:aria-label|title)=["\']([^"\']*?[\d,.]+[KkMmBb]?\s*(?:shares|Shares|share|Share)[^"\']*?)["\']/i', $html, $matches)) {
+            if (preg_match('/([\d,.]+[KkMmBb]?)\s*(?:shares|Shares|share|Share)/i', $matches[1], $num)) {
+                return $this->parseFormattedCount($num[1]);
+            }
         }
 
         // 4. Fallback: Meta description
         $desc = ($meta['ogDescription'] ?? '') . ' ' . ($meta['description'] ?? '');
-        if (preg_match('/([\d,.]+[KkMmBb]?)\s*(?:shares|Shares|share|Share)/', $desc, $matches)) {
+        if (preg_match('/([\d,.]+[KkMmBb]?)\s*(?:shares|Shares|share|Share)/i', $desc, $matches)) {
             return $this->parseFormattedCount($matches[1]);
         }
 
         // 5. Fallback: Search HTML tags for share text
         if (preg_match('/>\s*([\d,.]+[KkMmBb]?)\s*(?:shares|Shares|share|Share)\s*</i', $html, $matches)) {
+            return $this->parseFormattedCount($matches[1]);
+        }
+
+        if (preg_match('/([\d,.]+[KkMmBb]?)\s*(?:shares|Shares|share|Share)/i', $html, $matches)) {
             return $this->parseFormattedCount($matches[1]);
         }
 

@@ -46,14 +46,14 @@ export default function EditExpiryModal({ isOpen, post, onSave, onClose }) {
     const trackUntil = computeTrackUntil()
 
     try {
-      const res = await fetch(`http://localhost:8000/api/posts/${post.id}/expiry`, {
+      const res = await fetch(`/api/posts/${post.id}/expiry`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ track_until: trackUntil }),
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Failed to update schedule')
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to update schedule')
 
       onSave(data)
       onClose()
