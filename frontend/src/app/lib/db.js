@@ -39,43 +39,48 @@ function getPool() {
   return pool
 }
 
-// ----------------------------------------------------
-// Fallback JSON DB Helpers
-// ----------------------------------------------------
 function ensureJsonDb() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-  }
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8')
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true })
+    }
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8')
+    }
+  } catch (e) {
+    // In read-only serverless environments like Vercel, ignore filesystem write errors
   }
 }
 
 function readJsonDb() {
   ensureJsonDb()
   try {
-    const raw = fs.readFileSync(DB_FILE, 'utf-8')
-    const data = JSON.parse(raw)
-    const now = new Date()
-    const valid = data.posts.filter((p) => {
-      if (!p.track_until) return true
-      return new Date(p.track_until) > now
-    })
-
-    if (valid.length !== data.posts.length) {
-      data.posts = valid
-      writeJsonDb(data)
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, 'utf-8')
+      const data = JSON.parse(raw)
+      const now = new Date()
+      const valid = (data.posts || []).filter((p) => {
+        if (!p.track_until) return true
+        return new Date(p.track_until) > now
+      })
+      return { posts: valid }
     }
-
-    return data
   } catch {
-    return INITIAL_DATA
+    // ignore
   }
+  return INITIAL_DATA
 }
 
 function writeJsonDb(data) {
-  ensureJsonDb()
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  try {
+    ensureJsonDb()
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  } catch (e) {
+    // If running on Vercel without a database, provide an informative error
+    if (process.env.VERCEL || !process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is missing in Vercel. Please set DATABASE_URL in Vercel Project Settings.')
+    }
+  }
 }
 
 // ----------------------------------------------------
