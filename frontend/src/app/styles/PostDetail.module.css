@@ -442,3 +442,31 @@
   color: var(--color-danger);
   font-size: 14px;
 }
+
+@media (max-width: 768px) {
+  .page {
+    padding: 16px 14px 80px;
+  }
+  .topBar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .titleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .detailThumbnailBox {
+    width: 100%;
+    height: 180px;
+  }
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}

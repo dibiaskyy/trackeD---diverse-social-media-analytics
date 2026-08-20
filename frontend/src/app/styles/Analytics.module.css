@@ -512,7 +512,35 @@
 }
 
 @media (max-width: 900px) {
+  .page {
+    padding: 20px 16px 80px;
+  }
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
   .metricChartsGrid {
     grid-template-columns: 1fr;
+  }
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .pageTitle {
+    font-size: 22px;
+  }
+  .platformGrid {
+    grid-template-columns: 1fr;
+  }
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+  .metricTabs {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 }

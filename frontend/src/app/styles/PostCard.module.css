@@ -378,12 +378,37 @@
 }
 
 @media (max-width: 768px) {
+  .card {
+    padding: 14px 16px;
+  }
   .cardContent {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
   }
   .thumbnailContainer {
     width: 100%;
-    height: 140px;
+    height: 150px;
+  }
+  .mainInfo {
+    width: 100%;
+  }
+  .stats4Col,
+  .stats3Col {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cardActions {
+    margin-left: auto;
+  }
+  .statValue {
+    font-size: 15px;
   }
 }
