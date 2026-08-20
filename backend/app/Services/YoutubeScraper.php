@@ -10,6 +10,11 @@ class YouTubeScraper
 {
     public function scrape(string $url): array
     {
+        // Normalize shorts / shortlinks to watch URL to ensure full comment & metric payload
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/))([\w-]{11})/', $url, $m)) {
+            $url = "https://www.youtube.com/watch?v={$m[1]}";
+        }
+
         $response = Http::timeout(45)->post('http://scraper:4000/fetch-youtube', [
             'url' => $url,
         ]);
@@ -18,13 +23,15 @@ class YouTubeScraper
             throw new Exception('Scraper service error: ' . $response->body());
         }
 
-        $html = $response->json('html');
+        $result = $response->json();
+        $html = $result['html'] ?? '';
+        $meta = $result['meta'] ?? [];
 
-        $views = $this->extractViews($html);
-        $likes = $this->extractLikes($html);
-        $comments = $this->extractComments($html);
+        $views = $this->extractViews($html, $meta);
+        $likes = $this->extractLikes($html, $meta);
+        $comments = $this->extractComments($html, $meta);
         $thumbnail = $this->extractThumbnail($url, $html);
-        $caption = $this->extractCaption($html);
+        $caption = $meta['domCaption'] ?? $this->extractCaption($html);
 
         return [
             'views' => $views,
@@ -35,6 +42,27 @@ class YouTubeScraper
             'posted_at' => $this->extractPublishDate($html),
             'thumbnail_url' => $thumbnail,
         ];
+    }
+
+    private function parseFormattedCount(string $str): int
+    {
+        $clean = trim($str);
+        if (empty($clean)) return 0;
+
+        $multiplier = 1;
+        if (stripos($clean, 'K') !== false) {
+            $multiplier = 1000;
+            $clean = str_ireplace('K', '', $clean);
+        } elseif (stripos($clean, 'M') !== false) {
+            $multiplier = 1000000;
+            $clean = str_ireplace('M', '', $clean);
+        } elseif (stripos($clean, 'B') !== false) {
+            $multiplier = 1000000000;
+            $clean = str_ireplace('B', '', $clean);
+        }
+
+        $clean = preg_replace('/[^\d.]/', '', $clean);
+        return (int) round(floatval($clean) * $multiplier);
     }
 
     private function extractThumbnail(string $url, string $html): ?string
@@ -61,7 +89,7 @@ class YouTubeScraper
         return null;
     }
 
-    private function extractViews(string $html): int
+    private function extractViews(string $html, array $meta = []): int
     {
         // 1. Raw integer in videoDetails or microformat (e.g. "viewCount":"26453")
         if (preg_match('/"viewCount":\s*"?(\d+)"?/', $html, $matches)) {
@@ -80,13 +108,23 @@ class YouTubeScraper
             return (int) $matches[1];
         }
 
+        if (!empty($meta['domViews'])) {
+            $v = $this->parseFormattedCount($meta['domViews']);
+            if ($v > 0) return $v;
+        }
+
         return 0;
     }
 
-    private function extractLikes(string $html): int
+    private function extractLikes(string $html, array $meta = []): int
     {
-        if (preg_match('/"accessibilityData":\{"label":"([\d,]+) likes"\}/', $html, $matches)) {
-            return (int) str_replace(',', '', $matches[1]);
+        if (!empty($meta['domLikes'])) {
+            $l = $this->parseFormattedCount($meta['domLikes']);
+            if ($l > 0) return $l;
+        }
+
+        if (preg_match('/"accessibilityData":\{"label":"([\d,.]+[KkMmBb]?)\s+likes"\}/i', $html, $matches)) {
+            return $this->parseFormattedCount($matches[1]);
         }
 
         if (preg_match('/"likeCount":\s*"?(\d+)"?/', $html, $matches)) {
@@ -96,18 +134,39 @@ class YouTubeScraper
         return 0;
     }
 
-    private function extractComments(string $html): int
+    private function extractComments(string $html, array $meta = []): int
     {
-        if (preg_match('/"commentsCount":\{"simpleText":"([\d,]+)"\}/', $html, $matches)) {
-            return (int) str_replace(',', '', $matches[1]);
+        // 1. Direct Playwright DOM / ytInitialData extraction
+        if (!empty($meta['domComments'])) {
+            $c = $this->parseFormattedCount($meta['domComments']);
+            if ($c > 0) return $c;
         }
 
-        if (preg_match('/"contextualInfo":\{"runs":\[\{"text":"([\d,]+)"\}/', $html, $matches)) {
-            return (int) str_replace(',', '', $matches[1]);
-        }
-
-        if (preg_match('/"commentCount":\s*"?(\d+)"?/', $html, $matches)) {
+        // 2. Schema.org / JSON-LD
+        if (preg_match('/"interactionType":\s*(?:\{"@type":\s*"CommentAction"\}|"https?:\/\/schema\.org\/CommentAction")[^}]*?"userInteractionCount":\s*"?(\d+)"?/i', $html, $matches)) {
             return (int) $matches[1];
+        }
+
+        // 3. YouTube initial data structures
+        if (preg_match('/"(?:commentsCount|commentCount)":\s*(?:\{[^}]*?"simpleText":\s*"([\d,.]+[KkMmBb]?)"|\s*"?(\d+)"?)/i', $html, $matches)) {
+            $val = !empty($matches[1]) ? $matches[1] : $matches[2];
+            return $this->parseFormattedCount($val);
+        }
+
+        if (preg_match('/"contextualInfo":\s*\{"runs":\[\{"text":"([\d,.]+[KkMmBb]?)"\}/i', $html, $matches)) {
+            return $this->parseFormattedCount($matches[1]);
+        }
+
+        if (preg_match('/"accessibilityData":\s*\{"label":"([\d,.]+[KkMmBb]?)\s+comments?"\}/i', $html, $matches)) {
+            return $this->parseFormattedCount($matches[1]);
+        }
+
+        if (preg_match('/"totalComments":\s*"?(\d+)"?/', $html, $matches)) {
+            return (int) $matches[1];
+        }
+
+        if (preg_match('/([\d,.]+[KkMmBb]?)\s+Comments?\b/i', $html, $matches)) {
+            return $this->parseFormattedCount($matches[1]);
         }
 
         return 0;

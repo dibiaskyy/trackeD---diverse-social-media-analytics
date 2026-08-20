@@ -73,10 +73,10 @@ export default function PostDetailPage() {
 
   const fetchData = () => {
     setLoading(true)
-    fetch(`http://localhost:8000/api/posts/${id}/history`)
+    fetch(`/api/posts/${id}`)
       .then(async (res) => {
         const json = await res.json()
-        if (!res.ok) throw new Error(json.message || 'Failed to load')
+        if (!res.ok) throw new Error(json.error || json.message || 'Failed to load')
         setData(json)
       })
       .catch((err) => setError(err.message))
@@ -92,7 +92,7 @@ export default function PostDetailPage() {
   const handleDeletePost = async () => {
     setDeleting(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/posts/${id}`, {
+      const res = await fetch(`/api/posts/${id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete post')
@@ -106,9 +106,9 @@ export default function PostDetailPage() {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/posts/${id}/refresh`, { method: 'POST' })
+      const res = await fetch(`/api/posts/${id}/refresh`, { method: 'POST' })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Failed to refresh')
+      if (!res.ok) throw new Error(json.error || json.message || 'Failed to refresh')
       fetchData()
     } catch (err) {
       setError(err.message)
@@ -324,11 +324,27 @@ export default function PostDetailPage() {
               <span className={styles.statValue}>{latest.comments.toLocaleString()}</span>
             </div>
 
-            {/* Shares on TikTok and Facebook */}
-            {(isTikTok || isFacebook) && (
+            {/* Shares on TikTok, or Facebook when available */}
+            {isTikTok ? (
               <div className={styles.statCard}>
                 <span className={styles.statLabel}>Shares</span>
-                <span className={styles.statValue}>{latest.shares.toLocaleString()}</span>
+                <span className={styles.statValue}>{(latest.shares ?? 0).toLocaleString()}</span>
+              </div>
+            ) : isFacebook ? (
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Shares</span>
+                <span className={styles.statValue}>
+                  {(latest.shares ?? 0).toLocaleString()}
+                </span>
+                <span className={styles.neutral}>
+                  {latest.shares > 0 ? 'Public shares' : '0 (Reels restrict shares)'}
+                </span>
+              </div>
+            ) : (
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Shares</span>
+                <span className={styles.statValue}>N/A</span>
+                <span className={styles.neutral}>Hidden by YouTube</span>
               </div>
             )}
 
@@ -343,7 +359,11 @@ export default function PostDetailPage() {
                 </>
               )}
               <span className={styles.neutral}>
-                {isYouTube ? '(likes + comments) ÷ views' : '(likes + comments + shares) ÷ views'}
+                {isTikTok
+                  ? '(likes + comments + shares) ÷ views'
+                  : isFacebook && latest.shares > 0
+                  ? '(likes + comments + shares) ÷ views'
+                  : '(likes + comments) ÷ views'}
               </span>
             </div>
           </div>
@@ -428,7 +448,7 @@ export default function PostDetailPage() {
                     <th>Views</th>
                     <th>Likes</th>
                     <th>Comments</th>
-                    {isTikTok && <th>Shares</th>}
+                    <th>Shares</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -438,7 +458,7 @@ export default function PostDetailPage() {
                       <td>{s.views.toLocaleString()}</td>
                       <td>{s.likes.toLocaleString()}</td>
                       <td>{s.comments.toLocaleString()}</td>
-                      {isTikTok && <td>{s.shares.toLocaleString()}</td>}
+                      <td>{s.shares > 0 ? s.shares.toLocaleString() : (isTikTok ? '0' : '—')}</td>
                     </tr>
                   ))}
                 </tbody>

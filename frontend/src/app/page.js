@@ -42,7 +42,7 @@ export default function Dashboard() {
   const { theme } = useTheme()
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/posts')
+    fetch('/api/posts')
       .then((res) => res.json())
       .then((data) => setPosts(data))
       .catch((err) => console.error(err))
@@ -71,7 +71,7 @@ export default function Dashboard() {
     try {
       const results = await Promise.allSettled(
         posts.map((p) =>
-          fetch(`http://localhost:8000/api/posts/${p.id}/refresh`, { method: 'POST' })
+          fetch(`/api/posts/${p.id}/refresh`, { method: 'POST' })
             .then((r) => r.json())
         )
       )
@@ -139,9 +139,9 @@ export default function Dashboard() {
       {/* Page header */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.greeting}>{getGreeting()}, Creator 👋</h1>
+          <h1 className={styles.greeting}>{getGreeting()}, Creator</h1>
           <p className={styles.pageSubtitle}>
-            Tracking {posts.length} post{posts.length !== 1 ? 's' : ''} across TikTok and YouTube
+            Tracking {posts.length} post{posts.length !== 1 ? 's' : ''} across TikTok, YouTube, and Facebook
           </p>
         </div>
       </div>
@@ -320,21 +320,33 @@ export default function Dashboard() {
 
       {loaded && posts.length === 0 && (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>📊</div>
+          <div className={styles.emptyIcon}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-text-tertiary)' }}>
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </div>
           <h3 className={styles.emptyTitle}>No posts tracked yet</h3>
           <p className={styles.emptyBody}>
-            Paste a TikTok or YouTube link above to start tracking views, likes, comments, and shares over time.
+            Paste a TikTok, YouTube, or Facebook link above to start tracking views, likes, comments, and shares over time.
           </p>
           <div className={styles.emptyExamples}>
             <code>https://www.tiktok.com/@user/video/123…</code>
             <code>https://www.youtube.com/watch?v=abc…</code>
+            <code>https://www.facebook.com/share/r/xyz…</code>
           </div>
         </div>
       )}
 
       {loaded && posts.length > 0 && filteredPosts.length === 0 && (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>🔍</div>
+          <div className={styles.emptyIcon}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-text-tertiary)' }}>
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
           <p className={styles.emptyBody}>No {filter} posts tracked yet.</p>
         </div>
       )}

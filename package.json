@@ -1,6 +1,14 @@
 {
+  "name": "tracked",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently -n \"next,scraper\" -c \"cyan,magenta\" \"npm run dev --prefix frontend\" \"node scraper-service/index.js\"",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:scraper": "node scraper-service/index.js",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix frontend"
+  },
   "dependencies": {
-    "axios": "^1.19.0",
-    "recharts": "^3.10.1"
+    "concurrently": "^9.1.2"
   }
 }

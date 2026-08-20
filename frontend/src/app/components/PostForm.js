@@ -69,7 +69,7 @@ export default function PostForm({ onPostAdded }) {
 
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:8000/api/posts', {
+      const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, track_until: trackUntil }),
@@ -78,7 +78,7 @@ export default function PostForm({ onPostAdded }) {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.message || 'Something went wrong')
+        throw new Error(data.error || data.message || 'Something went wrong')
       }
 
       onPostAdded(data)
