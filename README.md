@@ -48,26 +48,49 @@ graph TD
 
 ## Quick Start
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/dibiaskyy/trackeD.git
-cd trackeD
-```
+### Option A: Local Development (Recommended)
 
-### 2. Launch Services
-```bash
-docker compose up -d --build
-```
+1. **Install Dependencies**
+   ```bash
+   npm install
+   npm install --prefix frontend
+   npm install --prefix scraper-service
+   ```
 
-### 3. Run Database Migrations
-```bash
-docker compose exec backend php artisan migrate --force
-```
+2. **Configure Environment**
+   Create `frontend/.env.local` (or copy from `frontend/.env.example`):
+   ```env
+   DATABASE_URL="mysql://avnadmin:YOUR_PASSWORD@YOUR_HOST:PORT/defaultdb?ssl-mode=REQUIRED"
+   SCRAPER_URL="http://localhost:4000"
+   ```
 
-### 4. Access URLs
+3. **Run Dev Server**
+   ```bash
+   npm run dev
+   ```
+   *This concurrently starts both the Next.js frontend (`:3000`) and the scraper microservice (`:4000`).*
+
+---
+
+### Option B: Docker Compose
+
+1. **Launch Containers**
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. **Run Migrations (if using backend service)**
+   ```bash
+   docker compose exec backend php artisan migrate --force
+   ```
+
+---
+
+### Access URLs
 - **Web App**: `http://localhost:3000`
-- **REST API**: `http://localhost:8000/api`
-- **phpMyAdmin**: `http://localhost:8080`
+- **Scraper Service**: `http://localhost:4000`
+- **REST API** *(Docker backend)*: `http://localhost:8000/api`
+- **phpMyAdmin** *(Docker)*: `http://localhost:8080`
 
 ---
 
