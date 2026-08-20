@@ -171,10 +171,38 @@ function parseYouTubeScraper(url, html, meta = {}) {
 // Facebook Scraper
 // -------------------------------------------------------------
 async function scrapeFacebookDirect(url) {
-  // 1. Fetch base metadata via verified crawler (gets Views, Likes, Comments, Caption, Thumbnail)
   let data = { views: 0, likes: 0, comments: 0, shares: 0, caption: null, thumbnail_url: null, posted_at: null }
+
+  // 1. Try Desktop Chrome request to extract full SSR state & shares
   try {
-    const res = await fetch(url, {
+    const desktopRes = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+      },
+      redirect: 'follow',
+    })
+    const desktopHtml = await desktopRes.text()
+    const desktopParsed = parseFacebookScraper(desktopHtml, {})
+    
+    data.views = Math.max(data.views, desktopParsed.views)
+    data.likes = Math.max(data.likes, desktopParsed.likes)
+    data.comments = Math.max(data.comments, desktopParsed.comments)
+    data.shares = Math.max(data.shares, desktopParsed.shares)
+    if (desktopParsed.caption) data.caption = desktopParsed.caption
+    if (desktopParsed.thumbnail_url) data.thumbnail_url = desktopParsed.thumbnail_url
+  } catch (e) {
+    // ignore desktop fetch error
+  }
+
+  // 2. Fetch via crawler header (gets unrounded views, likes, description, thumbnail)
+  try {
+    const crawlerRes = await fetch(url, {
       headers: {
         'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -182,11 +210,20 @@ async function scrapeFacebookDirect(url) {
       },
       redirect: 'follow',
     })
-    const html = await res.text()
-    data = parseFacebookScraper(html, {})
-  } catch {}
+    const crawlerHtml = await crawlerRes.text()
+    const crawlerParsed = parseFacebookScraper(crawlerHtml, {})
 
-  // 2. If shares is 0 and session cookies are configured, enrich shares via Playwright
+    data.views = Math.max(data.views, crawlerParsed.views)
+    data.likes = Math.max(data.likes, crawlerParsed.likes)
+    data.comments = Math.max(data.comments, crawlerParsed.comments)
+    data.shares = Math.max(data.shares, crawlerParsed.shares)
+    if (!data.caption && crawlerParsed.caption) data.caption = crawlerParsed.caption
+    if (!data.thumbnail_url && crawlerParsed.thumbnail_url) data.thumbnail_url = crawlerParsed.thumbnail_url
+  } catch (e) {
+    // ignore crawler fetch error
+  }
+
+  // 3. If shares is still 0 and session cookies are configured, enrich shares via Playwright
   const fbCUser = process.env.FB_C_USER
   const fbXs = process.env.FB_XS
 
