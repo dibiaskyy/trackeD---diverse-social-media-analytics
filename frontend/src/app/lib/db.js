@@ -40,29 +40,34 @@ function getPool() {
 }
 
 // ----------------------------------------------------
-// Fallback JSON DB Helpers
+// Fallback JSON DB Helpers (Local dev + safe on read-only Vercel)
 // ----------------------------------------------------
 function ensureJsonDb() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-  }
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8')
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true })
+    }
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8')
+    }
+  } catch {
+    // Silently ignore on read-only filesystems (e.g. Vercel)
   }
 }
 
 function readJsonDb() {
   ensureJsonDb()
   try {
+    if (!fs.existsSync(DB_FILE)) return INITIAL_DATA
     const raw = fs.readFileSync(DB_FILE, 'utf-8')
     const data = JSON.parse(raw)
     const now = new Date()
-    const valid = data.posts.filter((p) => {
+    const valid = (data.posts || []).filter((p) => {
       if (!p.track_until) return true
       return new Date(p.track_until) > now
     })
 
-    if (valid.length !== data.posts.length) {
+    if (valid.length !== (data.posts || []).length) {
       data.posts = valid
       writeJsonDb(data)
     }
@@ -74,12 +79,20 @@ function readJsonDb() {
 }
 
 function writeJsonDb(data) {
-  ensureJsonDb()
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  try {
+    ensureJsonDb()
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  } catch (err) {
+    if (process.env.VERCEL) {
+      console.warn('Cannot write to JSON DB on Vercel read-only filesystem:', err.message)
+    } else {
+      console.error('Failed writing to local JSON DB:', err.message)
+    }
+  }
 }
 
 // ----------------------------------------------------
-// Main DB Operations (Aiven MySQL via mysql2 + JSON Fallback)
+// Main DB Operations
 // ----------------------------------------------------
 
 export async function getAllPosts() {
@@ -133,12 +146,14 @@ export async function getAllPosts() {
         }
       })
     } catch (err) {
-      console.warn('MySQL getAllPosts query failed, falling back to JSON db:', err.message)
+      console.warn('MySQL getAllPosts failed:', err.message)
+      if (process.env.VERCEL) return []
     }
   }
 
+  // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  return jsonDb.posts.map((p) => {
+  return (jsonDb.posts || []).map((p) => {
     const latest = p.snapshots && p.snapshots.length > 0 ? p.snapshots[p.snapshots.length - 1] : null
     return {
       id: p.id,
@@ -240,12 +255,14 @@ export async function getPostById(id) {
         }
       }
     } catch (err) {
-      console.warn('MySQL getPostById failed, falling back to JSON db:', err.message)
+      console.warn('MySQL getPostById failed:', err.message)
+      if (process.env.VERCEL) return null
     }
   }
 
+  // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  const post = jsonDb.posts.find((p) => String(p.id) === String(id))
+  const post = (jsonDb.posts || []).find((p) => String(p.id) === String(id))
   if (!post) return null
 
   const snapshots = post.snapshots || []
@@ -262,17 +279,19 @@ export async function getPostById(id) {
     }
   }
 
+  const dayAgoViews = dayAgo ? Number(dayAgo.views || 0) : 0
+
   let growth = null
   if (latest && dayAgo && dayAgoViews > 0 && dayAgo !== latest) {
-    growth = Number((((latest.views - dayAgo.views) / dayAgo.views) * 100).toFixed(1))
+    growth = Number((((latest.views - dayAgoViews) / dayAgoViews) * 100).toFixed(1))
   }
 
   let engagementRate = null
   if (latest && latest.views > 0) {
     const interactions =
       post.platform === 'youtube'
-        ? latest.likes + latest.comments
-        : latest.likes + latest.comments + latest.shares
+        ? (latest.likes || 0) + (latest.comments || 0)
+        : (latest.likes || 0) + (latest.comments || 0) + (latest.shares || 0)
     engagementRate = Number(((interactions / latest.views) * 100).toFixed(2))
   }
 
@@ -296,7 +315,7 @@ export async function getPostById(id) {
           fetched_at: latest.fetched_at,
         }
       : null,
-    views_1d_ago: dayAgo?.views ?? null,
+    views_1d_ago: dayAgo ? dayAgoViews : null,
     growth_percent: growth,
     engagement_rate: engagementRate,
     snapshots: snapshots.map((s) => ({
@@ -345,17 +364,21 @@ export async function createPost({ platform, post_url, caption, thumbnail_url, t
       return await getPostById(newId)
     } catch (err) {
       if (err.message.includes('already being tracked')) throw err
-      console.warn('MySQL createPost failed, falling back to JSON db:', err.message)
+      console.warn('MySQL createPost failed:', err.message)
+      if (process.env.VERCEL) {
+        throw new Error('Database connection unavailable on server. Please check your database settings.')
+      }
     }
   }
 
+  // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  const existing = jsonDb.posts.find((p) => p.post_url.trim().toLowerCase() === post_url.trim().toLowerCase())
+  const existing = (jsonDb.posts || []).find((p) => p.post_url.trim().toLowerCase() === post_url.trim().toLowerCase())
   if (existing) {
     throw new Error('This video URL is already being tracked.')
   }
 
-  const maxId = jsonDb.posts.reduce((max, p) => Math.max(max, p.id || 0), 0)
+  const maxId = (jsonDb.posts || []).reduce((max, p) => Math.max(max, p.id || 0), 0)
   const newId = maxId + 1
 
   const newPost = {
@@ -380,6 +403,7 @@ export async function createPost({ platform, post_url, caption, thumbnail_url, t
       : [],
   }
 
+  if (!jsonDb.posts) jsonDb.posts = []
   jsonDb.posts.unshift(newPost)
   writeJsonDb(jsonDb)
 
@@ -417,12 +441,14 @@ export async function addSnapshot(postId, stats) {
 
       return await getPostById(numericId)
     } catch (err) {
-      console.warn('MySQL addSnapshot failed, falling back to JSON db:', err.message)
+      console.warn('MySQL addSnapshot failed:', err.message)
+      if (process.env.VERCEL) return null
     }
   }
 
+  // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  const post = jsonDb.posts.find((p) => String(p.id) === String(postId))
+  const post = (jsonDb.posts || []).find((p) => String(p.id) === String(postId))
   if (!post) throw new Error('Post not found')
 
   if (!post.snapshots) post.snapshots = []
@@ -457,12 +483,14 @@ export async function updatePostExpiry(postId, trackUntil) {
       const postData = await getPostById(numericId)
       return postData?.post || null
     } catch (err) {
-      console.warn('MySQL updatePostExpiry failed, falling back to JSON db:', err.message)
+      console.warn('MySQL updatePostExpiry failed:', err.message)
+      if (process.env.VERCEL) return null
     }
   }
 
+  // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  const post = jsonDb.posts.find((p) => String(p.id) === String(postId))
+  const post = (jsonDb.posts || []).find((p) => String(p.id) === String(postId))
   if (!post) throw new Error('Post not found')
 
   post.track_until = trackUntil ? new Date(trackUntil).toISOString() : null
@@ -479,13 +507,15 @@ export async function deletePost(postId) {
       await db.execute('DELETE FROM tracked_posts WHERE id = ?', [numericId])
       return true
     } catch (err) {
-      console.warn('MySQL deletePost failed, falling back to JSON db:', err.message)
+      console.warn('MySQL deletePost failed:', err.message)
+      if (process.env.VERCEL) return false
     }
   }
 
+  // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  const initialLen = jsonDb.posts.length
-  jsonDb.posts = jsonDb.posts.filter((p) => String(p.id) !== String(postId))
+  const initialLen = (jsonDb.posts || []).length
+  jsonDb.posts = (jsonDb.posts || []).filter((p) => String(p.id) !== String(postId))
   if (jsonDb.posts.length === initialLen) {
     throw new Error('Post not found')
   }
