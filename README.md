@@ -6,7 +6,7 @@ A standalone social media analytics tool that tracks public video performance ac
 
 ## What is trackeD?
 
-trackeD automates metrics tracking for public video links. It uses a headless browser scraper to extract exact, unrounded engagement metrics directly from public URLs, logs periodic snapshots into a database (Aiven Cloud MySQL or local/Docker MySQL), and visualizes trends and engagement rates in an interactive dashboard.
+trackeD automates metrics tracking for public video links. It uses a headless browser scraper to extract exact, unrounded engagement metrics directly from public URLs, logs periodic snapshots into a database (TiDB Cloud MySQL or local/Docker MySQL), and visualizes trends and engagement rates in an interactive dashboard.
 
 ---
 
@@ -29,7 +29,7 @@ trackeD automates metrics tracking for public video links. It uses a headless br
 
 ## Tech Stack
 - **Frontend & API**: Next.js 16 (Turbopack), React 19, Recharts, jsPDF, CSS Modules
-- **Database & ORM**: MySQL 8 / Aiven Cloud MySQL, `mysql2` connection pooling, Prisma (Studio & Migrations)
+- **Database & ORM**: MySQL 8 / TiDB Cloud MySQL, `mysql2` connection pooling, Prisma (Studio & Migrations)
 - **Scraper Service**: Node.js, Express, Playwright (Headless Chromium)
 - **Containerization**: Docker & Docker Compose (Optional)
 
@@ -37,7 +37,7 @@ trackeD automates metrics tracking for public video links. It uses a headless br
 
 ## Quick Start
 
-### Option A: Local Development with Aiven / Cloud MySQL (Recommended)
+### Option A: Local Development with TiDB Cloud MySQL (Recommended)
 
 1. **Install Dependencies**
    ```bash
@@ -49,7 +49,7 @@ trackeD automates metrics tracking for public video links. It uses a headless br
 2. **Configure Environment**
    Create `frontend/.env.local` (or copy from `frontend/.env.example`):
    ```env
-   DATABASE_URL=mysql://avnadmin:YOUR_PASSWORD@YOUR_AIVEN_HOST:PORT/defaultdb?ssl-mode=REQUIRED
+   DATABASE_URL=mysql://YOUR_USER:YOUR_PASSWORD@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test?sslaccept=strict
    SCRAPER_URL=http://localhost:4000
    ```
 
@@ -115,7 +115,7 @@ trackeD automates metrics tracking for public video links. It uses a headless br
 
 ## Repository Branches
 
-- **`main`**: The primary branch with full support for `npm run dev`, Aiven Cloud MySQL, and Docker.
+- **`main`**: The primary branch with full support for `npm run dev`, TiDB Cloud MySQL, and Docker.
 - **`npm-and-docker-version`**: Standalone & containerized setup.
 - **`docker-version`**: Dedicated Docker-only environment.
 
