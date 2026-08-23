@@ -144,6 +144,20 @@ export default function PostForm({ onPostAdded }) {
         setError(`Your account is signed in with Facebook. Only Facebook links are approved. To track ${targetName} posts, please sign in with Google/Gmail.`)
         return
       }
+
+      // Mandatory Username / Handle Verification before tracking
+      if (detectedPlatform === 'youtube' && !youtubeHandle.trim()) {
+        setError('Please enter your YouTube Channel handle (@channelName) above before tracking.')
+        return
+      }
+      if (detectedPlatform === 'tiktok' && !tiktokHandle.trim()) {
+        setError('Please enter your TikTok username (@username) above before tracking.')
+        return
+      }
+      if (!youtubeHandle.trim() && !tiktokHandle.trim()) {
+        setError('Please enter your YouTube handle or TikTok username above before tracking.')
+        return
+      }
     }
 
     // Select the appropriate creator handle based on target platform ONLY if user is signed in
@@ -195,6 +209,22 @@ export default function PostForm({ onPostAdded }) {
   const isTikTokLocked = isSignedIn && hasFacebook && !hasGoogle
   const isYouTubeLocked = isSignedIn && hasFacebook && !hasGoogle
   const isFacebookLocked = isSignedIn && hasGoogle && !hasFacebook
+
+  // Required Handle missing detection for active state
+  let currentDetectedPlatform = null
+  if (/tiktok\.com/.test(url.trim())) currentDetectedPlatform = 'tiktok'
+  else if (/youtube\.com|youtu\.be/.test(url.trim())) currentDetectedPlatform = 'youtube'
+  else if (/facebook\.com|fb\.watch|fb\.com/.test(url.trim())) currentDetectedPlatform = 'facebook'
+
+  const isUsernameMissing = Boolean(
+    isSignedIn && (
+      currentDetectedPlatform === 'youtube'
+        ? !youtubeHandle.trim()
+        : currentDetectedPlatform === 'tiktok'
+        ? !tiktokHandle.trim()
+        : !youtubeHandle.trim() && !tiktokHandle.trim()
+    )
+  )
 
   const inputPlaceholder = !isSignedIn
     ? 'Paste a TikTok, YouTube, or Facebook video/reel link…'
@@ -350,6 +380,22 @@ export default function PostForm({ onPostAdded }) {
         </div>
       </div>
 
+      {/* Notice when handle is missing for logged in users */}
+      {isUsernameMissing && (
+        <div className={styles.handleMissingNotice}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>
+            {currentDetectedPlatform === 'youtube'
+              ? 'Please input your YouTube Channel handle (@channel) above before tracking.'
+              : currentDetectedPlatform === 'tiktok'
+              ? 'Please input your TikTok username (@username) above before tracking.'
+              : 'Please input your YouTube channel handle or TikTok username above to enable tracking.'}
+          </span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className={`${styles.form} ${focused ? styles.formFocused : ''}`}>
         <div className={styles.inputWrapper}>
           <svg className={styles.inputIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -368,7 +414,13 @@ export default function PostForm({ onPostAdded }) {
             id="post-url-input"
           />
         </div>
-        <button type="submit" disabled={loading} className={styles.button} id="track-post-btn">
+        <button
+          type="submit"
+          disabled={loading || isUsernameMissing}
+          className={`${styles.button} ${isUsernameMissing ? styles.buttonDisabled : ''}`}
+          id="track-post-btn"
+          title={isUsernameMissing ? 'Please input your channel handle above first to enable tracking' : 'Track Post'}
+        >
           {loading ? (
             <span className={styles.spinner} />
           ) : (
@@ -377,7 +429,7 @@ export default function PostForm({ onPostAdded }) {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Track Post
+              {isUsernameMissing ? 'Input Handle First' : 'Track Post'}
             </>
           )}
         </button>

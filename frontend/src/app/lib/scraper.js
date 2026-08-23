@@ -69,20 +69,62 @@ export async function scrapeUrl(url) {
 async function scrapeYouTubeDirect(url) {
   try {
     let fetchUrl = url
-    const shortMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/))([\w-]{11})/)
-    if (shortMatch) {
-      fetchUrl = `https://www.youtube.com/watch?v=${shortMatch[1]}`
+    const idMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
+    const videoId = idMatch ? idMatch[1] : null
+
+    if (videoId) {
+      fetchUrl = `https://www.youtube.com/watch?v=${videoId}`
     }
 
-    const res = await fetch(fetchUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    })
-    const html = await res.text()
-    return parseYouTubeScraper(url, html, {})
+    let html = ''
+    try {
+      const res = await fetch(fetchUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+478; SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(9000),
+      })
+      if (res.ok) {
+        html = await res.text()
+      }
+    } catch (e) {
+      console.warn('YouTube HTML fetch warning:', e.message)
+    }
+
+    const parsed = parseYouTubeScraper(url, html, {})
+
+    // Fallback: If views, likes, author, or caption are missing on cloud serverless runtimes
+    if (videoId && (parsed.views === 0 || parsed.likes === 0 || !parsed.author || !parsed.caption)) {
+      try {
+        const [rydRes, oembedRes] = await Promise.allSettled([
+          fetch(`https://returnyoutubedislikeapi.com/votes?videoId=${videoId}`, { signal: AbortSignal.timeout(5000) }),
+          fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`, { signal: AbortSignal.timeout(5000) }),
+        ])
+
+        if (rydRes.status === 'fulfilled' && rydRes.value.ok) {
+          const rydData = await rydRes.value.json()
+          if (parsed.views === 0 && rydData.viewCount) parsed.views = Number(rydData.viewCount)
+          if (parsed.likes === 0 && rydData.likes) parsed.likes = Number(rydData.likes)
+        }
+
+        if (oembedRes.status === 'fulfilled' && oembedRes.value.ok) {
+          const oembedData = await oembedRes.value.json()
+          if (!parsed.caption && oembedData.title) parsed.caption = oembedData.title
+          if (!parsed.author && oembedData.author_name) parsed.author = oembedData.author_name
+          if (!parsed.authorHandle && oembedData.author_url) {
+            const handleFromUrl = oembedData.author_url.match(/@([^/]+)/)
+            if (handleFromUrl) parsed.authorHandle = `@${handleFromUrl[1]}`
+          }
+        }
+      } catch (err) {
+        console.warn('YouTube secondary APIs warning:', err.message)
+      }
+    }
+
+    return parsed
   } catch {
     return parseYouTubeScraper(url, '', {})
   }
