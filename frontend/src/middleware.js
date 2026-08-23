@@ -7,28 +7,46 @@ const isPublicRoute = createRouteMatcher([
   '/api(.*)'
 ])
 
-export default clerkMiddleware(async (auth, req) => {
+export default async function middleware(req, event) {
   try {
-    let userId = null
-    try {
-      const session = await auth()
-      userId = session?.userId
-    } catch {
-      // Auth context fallback
+    const hasClerkKeys = Boolean(
+      process.env.CLERK_SECRET_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+    )
+
+    if (hasClerkKeys) {
+      const clerkHandler = clerkMiddleware(async (auth, request) => {
+        try {
+          const session = await auth()
+          const userId = session?.userId
+          const hasGuestSession = request.cookies.get('tracked_guest_session')?.value === 'true'
+
+          if (!userId && !hasGuestSession && !isPublicRoute(request)) {
+            const welcomeUrl = request.nextUrl.clone()
+            welcomeUrl.pathname = '/welcome'
+            return NextResponse.redirect(welcomeUrl)
+          }
+        } catch {
+          // Ignore auth session retrieval error
+        }
+      })
+
+      return await clerkHandler(req, event)
     }
 
+    // Fallback if Clerk keys are missing during build/runtime
     const hasGuestSession = req.cookies.get('tracked_guest_session')?.value === 'true'
-
-    // If not signed in and no guest session cookie is present, redirect to /welcome
-    if (!userId && !hasGuestSession && !isPublicRoute(req)) {
+    if (!hasGuestSession && !isPublicRoute(req)) {
       const welcomeUrl = req.nextUrl.clone()
       welcomeUrl.pathname = '/welcome'
       return NextResponse.redirect(welcomeUrl)
     }
+
+    return NextResponse.next()
   } catch (err) {
-    console.error('Middleware safe execution error:', err)
+    console.error('Middleware execution error caught:', err)
+    return NextResponse.next()
   }
-})
+}
 
 export const config = {
   matcher: [
