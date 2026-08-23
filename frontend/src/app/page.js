@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, LabelList } from 'recharts'
 import PostForm from './components/PostForm'
 import PostCard from './components/PostCard'
 import StatCard from './components/StatCard'
 import { useToast, ToastContainer } from './components/Toast'
 import { useTheme } from './lib/ThemeContext'
+import { apiFetch } from './lib/authSession'
 import styles from './styles/Dashboard.module.css'
 
 const BAR_COLORS = ['#fafafa', '#d4d4d8', '#a1a1aa', '#71717a']
@@ -32,6 +35,8 @@ const PLATFORM_FILTERS = [
 ]
 
 export default function Dashboard() {
+  const router = useRouter()
+  const { isLoaded: isAuthLoaded, isSignedIn, user } = useUser()
   const [posts, setPosts] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [sort, setSort] = useState('newest')
@@ -41,8 +46,35 @@ export default function Dashboard() {
   const { toasts, addToast } = useToast()
   const { theme } = useTheme()
 
+  // Detect connected providers from Clerk
+  const externalAccounts = user?.externalAccounts || []
+  const hasGoogle = isSignedIn && (
+    externalAccounts.some((acc) =>
+      acc.provider?.toLowerCase().includes('google') ||
+      acc.verification?.strategy?.toLowerCase().includes('google')
+    ) ||
+    (user?.primaryEmailAddress?.emailAddress?.toLowerCase().endsWith('@gmail.com') ?? false)
+  )
+
+  const hasFacebook = isSignedIn && (
+    externalAccounts.some((acc) =>
+      acc.provider?.toLowerCase().includes('facebook') ||
+      acc.verification?.strategy?.toLowerCase().includes('facebook')
+    )
+  )
+
   useEffect(() => {
-    fetch('/api/posts')
+    if (isAuthLoaded && !isSignedIn) {
+      const hasGuestCookie = typeof document !== 'undefined' && document.cookie.includes('tracked_guest_session=true')
+      const dismissed = typeof window !== 'undefined' && localStorage.getItem('tracked_welcome_dismissed')
+      if (!hasGuestCookie && !dismissed) {
+        router.push('/welcome')
+      }
+    }
+  }, [isAuthLoaded, isSignedIn, router])
+
+  useEffect(() => {
+    apiFetch('/api/posts')
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => setPosts(Array.isArray(data) ? data : []))
       .catch((err) => {
@@ -75,7 +107,7 @@ export default function Dashboard() {
     try {
       const results = await Promise.allSettled(
         currentPosts.map((p) =>
-          fetch(`/api/posts/${p.id}/refresh`, { method: 'POST' })
+          apiFetch(`/api/posts/${p.id}/refresh`, { method: 'POST' })
             .then((r) => r.json())
         )
       )
@@ -266,14 +298,20 @@ export default function Dashboard() {
                   : f.key === 'youtube'
                   ? youtubeCount
                   : facebookCount
+              const isHighlightedPlatform =
+                (hasGoogle && (f.key === 'youtube' || f.key === 'tiktok')) ||
+                (hasFacebook && f.key === 'facebook')
+
               return (
                 <button
                   key={f.key}
-                  className={`${styles.pill} ${filter === f.key ? styles.pillActive : ''}`}
+                  className={`${styles.pill} ${filter === f.key ? styles.pillActive : ''} ${isHighlightedPlatform && filter !== f.key ? styles.pillHighlighted : ''}`}
                   onClick={() => setFilter(f.key)}
                   id={`filter-${f.key}`}
+                  title={isHighlightedPlatform ? `Connected & verified platform` : undefined}
                 >
                   {f.label}
+                  {isHighlightedPlatform && <span className={styles.connectedDot} />}
                   {count > 0 && <span className={styles.pillCount}>{count}</span>}
                 </button>
               )

@@ -150,6 +150,23 @@ function parseYouTubeScraper(url, html, meta = {}) {
     }
   }
 
+  let author = meta.domAuthor || null
+  let authorHandle = null
+
+  const handleMatch = html.match(/"canonicalBaseUrl":\s*"\/@([^"]+)"/) || html.match(/"navigationEndpoint":\{"browseEndpoint":\{"canonicalBaseUrl":"\/@([^"]+)"/)
+  if (handleMatch) {
+    authorHandle = `@${handleMatch[1].trim()}`
+  }
+
+  if (!author) {
+    const authorMatch = html.match(/"ownerChannelName":\s*"([^"]+)"/) ||
+                        html.match(/"author":\s*"([^"]+)"/) ||
+                        html.match(/<link\s+itemprop="name"\s+content="([^"]+)"/i)
+    if (authorMatch) {
+      author = authorMatch[1].trim()
+    }
+  }
+
   let thumbnail = null
   const idMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
   if (idMatch) {
@@ -162,6 +179,8 @@ function parseYouTubeScraper(url, html, meta = {}) {
     comments,
     shares: 0,
     caption,
+    author: author || authorHandle,
+    author_handle: authorHandle || author,
     thumbnail_url: thumbnail,
     posted_at: null,
   }
@@ -503,12 +522,23 @@ function parseTikTokScraper(html) {
     }
   }
 
+  let author = null
+  let authorHandle = null
+
+  const urlMatch = html.match(/"author":\{"id":[^}]*?"uniqueId":"([^"]+)"/i) || html.match(/"uniqueId":"([^"]+)"/i)
+  if (urlMatch) {
+    authorHandle = `@${urlMatch[1]}`
+    author = urlMatch[1]
+  }
+
   return {
     views,
     likes,
     comments,
     shares,
     caption,
+    author: author || authorHandle,
+    author_handle: authorHandle || author,
     thumbnail_url: thumbnail,
     posted_at: postedAt,
   }

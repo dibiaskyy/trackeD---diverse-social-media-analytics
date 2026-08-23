@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getPostThumbnail } from '../lib/format'
+import { apiFetch } from '../lib/authSession'
 import ConfirmModal from './ConfirmModal'
 import EditExpiryModal from './EditExpiryModal'
 import styles from '../styles/PostCard.module.css'
@@ -100,7 +101,7 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted, onRefresh
     setRefreshing(true)
 
     try {
-      const res = await fetch(`/api/posts/${post.id}/refresh`, {
+      const res = await apiFetch(`/api/posts/${post.id}/refresh`, {
         method: 'POST',
       })
       const data = await res.json()
@@ -119,7 +120,7 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted, onRefresh
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      const res = await fetch(`/api/posts/${post.id}`, {
+      const res = await apiFetch(`/api/posts/${post.id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete post')

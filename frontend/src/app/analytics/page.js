@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts'
 import { useTheme } from '../lib/ThemeContext'
+import { apiFetch } from '../lib/authSession'
 import { exportAnalyticsToPdf } from '../lib/exportPdf'
 import styles from '../styles/Analytics.module.css'
 
@@ -41,9 +42,9 @@ export default function AnalyticsPage() {
   const [activeMetricTab, setActiveMetricTab] = useState('all')
 
   useEffect(() => {
-    fetch('/api/posts')
+    apiFetch('/api/posts')
       .then((res) => res.json())
-      .then((data) => setPosts(data))
+      .then((data) => setPosts(Array.isArray(data) ? data : []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false))
   }, [])
@@ -173,9 +174,9 @@ export default function AnalyticsPage() {
         </div>
 
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>Avg. Engagement Rate</span>
-          <span className={styles.statValue}>{metrics.avgEngagementRate}%</span>
-          <span className={styles.statSubtext}>Verified ERR calculation</span>
+          <span className={styles.statLabel}>Avg. Interactions / Post</span>
+          <span className={styles.statValue}>{posts.length > 0 ? Math.round(metrics.totalInteractions / posts.length).toLocaleString() : 0}</span>
+          <span className={styles.statSubtext}>Interactions per video ({metrics.avgEngagementRate}% rate)</span>
         </div>
 
         <div className={styles.statCard}>

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getAllPosts, createPost } from '../../lib/db'
 import { detectPlatform, scrapeUrl } from '../../lib/scraper'
+import { getUserId } from '../../lib/getUserId'
 
-export async function GET() {
+export async function GET(req) {
   try {
-    const posts = await getAllPosts()
+    const userId = await getUserId(req)
+    const posts = await getAllPosts(userId)
     return NextResponse.json(Array.isArray(posts) ? posts : [])
   } catch (err) {
     console.error('GET /api/posts error:', err)
@@ -14,6 +16,7 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const userId = await getUserId(req)
     const body = await req.json()
     const url = body.url?.trim()
     const trackUntil = body.track_until || null
@@ -37,7 +40,35 @@ export async function POST(req) {
       console.warn('Initial scraping warning:', e.message)
     }
 
+    // Ownership / Creator Handle Verification
+    const creatorHandle = body.creator_handle?.trim() || null
+    if (creatorHandle && stats) {
+      const cleanUserHandle = creatorHandle.replace(/^@/, '').toLowerCase().trim()
+      const authorRaw = (stats.author || '').replace(/^@/, '').toLowerCase().trim()
+      const handleRaw = (stats.author_handle || '').replace(/^@/, '').toLowerCase().trim()
+
+      if (cleanUserHandle && (authorRaw || handleRaw)) {
+        const matches =
+          authorRaw === cleanUserHandle ||
+          handleRaw === cleanUserHandle ||
+          authorRaw.includes(cleanUserHandle) ||
+          cleanUserHandle.includes(authorRaw) ||
+          handleRaw.includes(cleanUserHandle)
+
+        if (!matches) {
+          const uploadedBy = stats.author_handle || stats.author || 'another creator'
+          return NextResponse.json(
+            {
+              error: `This video was uploaded by ${uploadedBy}. You can only track videos from your own channel/account (@${cleanUserHandle}).`,
+            },
+            { status: 422 }
+          )
+        }
+      }
+    }
+
     const newPost = await createPost({
+      user_id: userId,
       platform,
       post_url: url,
       track_until: trackUntil,

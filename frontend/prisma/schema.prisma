@@ -9,6 +9,7 @@ datasource db {
 
 model TrackedPost {
   id            Int            @id @default(autoincrement())
+  user_id       String?        @default("anonymous_default") @db.VarChar(100)
   platform      String
   post_url      String         @db.Text
   caption       String?        @db.Text
@@ -19,6 +20,7 @@ model TrackedPost {
   updated_at    DateTime       @updatedAt
   snapshots     PostSnapshot[]
 
+  @@index([user_id])
   @@map("tracked_posts")
 }
 

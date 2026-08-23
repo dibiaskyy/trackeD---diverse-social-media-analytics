@@ -187,3 +187,284 @@ nextjs-portal {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* ========================================================
+   Clerk UI Overrides & Development Badge Removal
+   ======================================================== */
+.cl-devModeBadge,
+[class*="cl-devMode"],
+[class*="cl-internal-phg5c5"],
+[class*="devModeBadge"],
+[data-localization-key*="developmentMode"],
+.cl-internal-b3fm6y,
+div:has(> .cl-devModeBadge),
+.cl-footer__development,
+.cl-internal-10255w8,
+[class*="footer__development"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide Clerk branding / dev watermark */
+.cl-internal-1hp5nfy,
+.cl-internal-157w0g9,
+.cl-internal-b3fm6y {
+  display: none !important;
+}
+
+/* Clerk Modal Root & Background */
+.cl-modalBackdrop {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.cl-card {
+  background: #121215 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95) !important;
+  border-radius: 16px !important;
+  color: #fafafa !important;
+}
+
+/* Headers & Titles */
+.cl-headerTitle,
+.cl-modalContent h1,
+.cl-modalContent h2 {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 20px !important;
+}
+
+.cl-headerSubtitle,
+.cl-headerSubtitle span,
+.cl-headerDescription {
+  color: #a1a1aa !important;
+  font-size: 13px !important;
+}
+
+/* Field Labels, Hints & Error text */
+.cl-formFieldLabel,
+.cl-formFieldLabel span,
+label[class*="cl-formFieldLabel"] {
+  color: #f4f4f5 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.cl-formFieldHintText,
+.cl-formFieldWarningText,
+.cl-formFieldInfoText,
+[class*="formFieldHintText"],
+[class*="formFieldWarningText"],
+[class*="formFieldInfoText"] {
+  color: #a1a1aa !important;
+  font-size: 12px !important;
+}
+
+.cl-formFieldErrorText,
+[class*="formFieldErrorText"] {
+  color: #f87171 !important;
+  font-size: 12px !important;
+}
+
+/* Primary Action Buttons */
+.cl-formButtonPrimary {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.cl-formButtonPrimary:hover {
+  background-color: #f4f4f5 !important;
+  opacity: 0.95 !important;
+}
+
+/* Social Buttons */
+/* Social Buttons */
+.cl-socialButtons,
+[class*="socialButtons"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsIconButton,
+.cl-socialButtonsIconButton__facebook,
+.cl-socialButtonsBlockButton__facebook,
+button[data-provider="facebook"],
+button[data-provider="oauth_facebook"],
+button[data-provider="google"],
+button[data-provider="oauth_google"] {
+  width: 100% !important;
+  height: 44px !important;
+  background-color: #18181b !important;
+  border: 1px solid #3f3f46 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 0 16px !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.cl-socialButtonsBlockButton:hover,
+.cl-socialButtonsIconButton:hover,
+button[data-provider="facebook"]:hover,
+button[data-provider="google"]:hover {
+  background-color: #27272a !important;
+  border-color: #71717a !important;
+}
+
+.cl-socialButtonsBlockButtonText {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  display: inline-block !important;
+}
+
+/* Ensure Facebook icon and text are aligned horizontally */
+.cl-socialButtonsIconButton__facebook,
+.cl-socialButtonsIconButton[data-provider="facebook"] {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+.cl-socialButtonsIconButton__facebook::after,
+.cl-socialButtonsIconButton[data-provider="facebook"]::after {
+  content: "Continue with Facebook" !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  display: inline-block !important;
+  white-space: nowrap !important;
+}
+
+.cl-socialButtonsIconButton__facebook svg,
+.cl-socialButtonsIconButton[data-provider="facebook"] svg,
+.cl-socialButtonsProviderIcon__facebook,
+.cl-socialButtonsIconButton__facebook img {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Hide overlapping Last Used badge */
+.cl-badge,
+[class*="badge"],
+[class*="badgeText"],
+[class*="socialButtonsBadge"] {
+  display: none !important;
+}
+
+/* High Contrast Headers & Subtitles */
+.cl-headerTitle,
+[class*="headerTitle"] {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+.cl-headerSubtitle,
+[class*="headerSubtitle"] {
+  color: #d4d4d8 !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+}
+
+/* Hide TikTok button from Clerk modal */
+.cl-socialButtonsIconButton__tiktok,
+.cl-socialButtonsBlockButton__tiktok,
+.cl-socialButtonsProviderIcon__tiktok,
+button[data-provider="tiktok"],
+button[data-provider="oauth_tiktok"],
+button[data-localization-key*="tiktok" i] {
+  display: none !important;
+}
+
+/* Hide unneeded Sign-Up footer link */
+.cl-footerAction,
+.cl-footerActionText,
+.cl-footerActionLink {
+  display: none !important;
+}
+
+/* Hide Development mode badge and watermark */
+.cl-devModeBadge,
+.cl-developmentModeBadge,
+[class*="devModeBadge"],
+[class*="developmentModeBadge"],
+.cl-internal-b3fm6y,
+.cl-internal-150y20e {
+  display: none !important;
+}
+
+/* Labels and Inputs */
+.cl-formFieldLabel,
+[class*="formFieldLabel"] {
+  color: #f4f4f5 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
+}
+
+.cl-formFieldInput,
+[class*="formFieldInput"] {
+  background-color: #18181b !important;
+  border: 1px solid #52525b !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+.cl-formFieldInput::placeholder,
+[class*="formFieldInput"]::placeholder {
+  color: #a1a1aa !important;
+  opacity: 1 !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1px #ffffff !important;
+}
+
+/* Badges (e.g. Last Used) */
+.cl-badge,
+[class*="badge"],
+[class*="badgeText"],
+[class*="socialButtonsBadge"] {
+  color: #f4f4f5 !important;
+  background-color: #27272a !important;
+  border: 1px solid #52525b !important;
+}
+
+/* Footer / Dividers */
+.cl-dividerLine {
+  background-color: #3f3f46 !important;
+}
+
+.cl-dividerText,
+[class*="dividerText"] {
+  color: #a1a1aa !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.cl-footer {
+  border-top-color: #27272a !important;
+  padding: 8px 0 !important;
+}

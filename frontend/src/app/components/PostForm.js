@@ -1,33 +1,36 @@
 "use client"
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { apiFetch } from '../lib/authSession'
 import styles from '../styles/PostForm.module.css'
 
-function TikTokIcon() {
+function TikTokIcon({ className }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--color-tiktok)' }}>
+    <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.79 1.54V6.78a4.85 4.85 0 01-1.02-.09z" />
     </svg>
   )
 }
 
-function YouTubeIcon() {
+function YouTubeIcon({ className }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--color-youtube)' }}>
+    <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
       <path d="M23.5 6.19a3.02 3.02 0 00-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 00.5 6.19 31.5 31.5 0 000 12a31.5 31.5 0 00.5 5.81 3.02 3.02 0 002.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 002.12-2.14A31.5 31.5 0 0024 12a31.5 31.5 0 00-.5-5.81zM9.75 15.52V8.48L15.5 12l-5.75 3.52z" />
     </svg>
   )
 }
 
-function FacebookIcon() {
+function FacebookIcon({ className }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--color-facebook)' }}>
+    <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
     </svg>
   )
 }
 
 export default function PostForm({ onPostAdded }) {
+  const { user, isSignedIn } = useUser()
   const [url, setUrl] = useState('')
   const [durationPreset, setDurationPreset] = useState('never')
   const [customDate, setCustomDate] = useState('')
@@ -35,6 +38,65 @@ export default function PostForm({ onPostAdded }) {
   const [error, setError] = useState('')
   const [focused, setFocused] = useState(false)
   const inputRef = useRef(null)
+
+  // YouTube & TikTok Handle states
+  const [youtubeHandle, setYoutubeHandle] = useState('')
+  const [tiktokHandle, setTiktokHandle] = useState('')
+
+  // Detect connected providers from Clerk
+  const externalAccounts = user?.externalAccounts || []
+  const hasGoogle = isSignedIn && (
+    externalAccounts.some((acc) =>
+      acc.provider?.toLowerCase().includes('google') ||
+      acc.verification?.strategy?.toLowerCase().includes('google')
+    ) ||
+    (user?.primaryEmailAddress?.emailAddress?.toLowerCase().endsWith('@gmail.com') ?? false)
+  )
+
+  const hasFacebook = isSignedIn && (
+    externalAccounts.some((acc) =>
+      acc.provider?.toLowerCase().includes('facebook') ||
+      acc.verification?.strategy?.toLowerCase().includes('facebook')
+    )
+  )
+
+  // Load and persist handles per user ID across logins
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const savedYt =
+      (user?.id && localStorage.getItem(`tracked_youtube_handle_${user.id}`)) ||
+      localStorage.getItem('tracked_youtube_handle') ||
+      ''
+
+    const savedTt =
+      (user?.id && localStorage.getItem(`tracked_tiktok_handle_${user.id}`)) ||
+      localStorage.getItem('tracked_tiktok_handle') ||
+      ''
+
+    setYoutubeHandle(savedYt)
+    setTiktokHandle(savedTt)
+  }, [user?.id])
+
+  const handleSaveYoutubeHandle = (val) => {
+    setYoutubeHandle(val)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tracked_youtube_handle', val)
+      if (user?.id) {
+        localStorage.setItem(`tracked_youtube_handle_${user.id}`, val)
+      }
+    }
+  }
+
+  const handleSaveTiktokHandle = (val) => {
+    setTiktokHandle(val)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tracked_tiktok_handle', val)
+      if (user?.id) {
+        localStorage.setItem(`tracked_tiktok_handle_${user.id}`, val)
+      }
+    }
+  }
 
   const computeTrackUntil = () => {
     if (durationPreset === 'never') return null
@@ -54,25 +116,44 @@ export default function PostForm({ onPostAdded }) {
     e.preventDefault()
     setError('')
 
-    if (!url.trim()) {
+    const trimmed = url.trim()
+    if (!trimmed) {
       setError('Please paste a post link.')
       return
     }
 
-    const isValid = /tiktok\.com|youtube\.com|youtu\.be|facebook\.com|fb\.watch|fb\.com/.test(url)
-    if (!isValid) {
+    let detectedPlatform = null
+    if (/tiktok\.com/.test(trimmed)) detectedPlatform = 'tiktok'
+    else if (/youtube\.com|youtu\.be/.test(trimmed)) detectedPlatform = 'youtube'
+    else if (/facebook\.com|fb\.watch|fb\.com/.test(trimmed)) detectedPlatform = 'facebook'
+
+    if (!detectedPlatform) {
       setError('Only TikTok, YouTube, and Facebook video/post links are supported.')
       return
+    }
+
+    // Select the appropriate creator handle based on target platform ONLY if user is signed in
+    let targetHandle = undefined
+    if (isSignedIn) {
+      if (detectedPlatform === 'youtube' && youtubeHandle.trim()) {
+        targetHandle = youtubeHandle.trim()
+      } else if (detectedPlatform === 'tiktok' && tiktokHandle.trim()) {
+        targetHandle = tiktokHandle.trim()
+      }
     }
 
     const trackUntil = computeTrackUntil()
 
     setLoading(true)
     try {
-      const res = await fetch('/api/posts', {
+      const res = await apiFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, track_until: trackUntil }),
+        body: JSON.stringify({
+          url: trimmed,
+          track_until: trackUntil,
+          creator_handle: targetHandle,
+        }),
       })
 
       const data = await res.json()
@@ -92,16 +173,117 @@ export default function PostForm({ onPostAdded }) {
     }
   }
 
+  const isTikTokHighlighted = hasGoogle || (!isSignedIn && !hasFacebook)
+  const isYouTubeHighlighted = hasGoogle || (!isSignedIn && !hasFacebook)
+  const isFacebookHighlighted = hasFacebook || (!isSignedIn && !hasGoogle)
+
   return (
     <div className={styles.wrapper}>
-      <div className={styles.topRow}>
-        <div className={styles.platformHints}>
-          <span className={styles.hint}><TikTokIcon /> TikTok</span>
-          <span className={styles.hintSep}>·</span>
-          <span className={styles.hint}><YouTubeIcon /> YouTube</span>
-          <span className={styles.hintSep}>·</span>
-          <span className={styles.hint}><FacebookIcon /> Facebook</span>
+      {/* Top Banner indicating Provider Sync */}
+      {isSignedIn && (
+        <div className={styles.authBanner}>
+          <div className={styles.authBannerLeft}>
+            <span className={styles.authPulseDot}></span>
+            {hasGoogle && !hasFacebook && (
+              <span>
+                <strong>Google Account Connected:</strong> YouTube & TikTok channels ready to track
+              </span>
+            )}
+            {hasFacebook && !hasGoogle && (
+              <span>
+                <strong>Facebook Account Connected:</strong> Facebook Reels & Videos ready to track
+              </span>
+            )}
+            {hasGoogle && hasFacebook && (
+              <span>
+                <strong>Google & Facebook Connected:</strong> All platforms active & ready to track
+              </span>
+            )}
+            {!hasGoogle && !hasFacebook && (
+              <span>
+                <strong>Account Synced:</strong> YouTube, TikTok & Facebook channels ready to track
+              </span>
+            )}
+          </div>
         </div>
+      )}
+
+      <div className={styles.topRow}>
+        {/* Platform Status Badges with Provider-Based Highlighting */}
+        <div className={styles.platformHints}>
+          <span
+            className={`${styles.hint} ${isTikTokHighlighted ? styles.hintHighlightedTikTok : styles.hintMuted}`}
+            title={hasGoogle ? 'Highlighted: Connected via Google' : 'TikTok platform'}
+          >
+            <TikTokIcon />
+            <span>TikTok</span>
+            {hasGoogle && <span className={styles.activePill}>Active</span>}
+          </span>
+
+          <span className={styles.hintSep}>·</span>
+
+          <span
+            className={`${styles.hint} ${isYouTubeHighlighted ? styles.hintHighlightedYouTube : styles.hintMuted}`}
+            title={hasGoogle ? 'Highlighted: Connected via Google' : 'YouTube platform'}
+          >
+            <YouTubeIcon />
+            <span>YouTube</span>
+            {hasGoogle && <span className={styles.activePill}>Active</span>}
+          </span>
+
+          <span className={styles.hintSep}>·</span>
+
+          <span
+            className={`${styles.hint} ${isFacebookHighlighted ? styles.hintHighlightedFacebook : styles.hintMuted}`}
+            title={hasFacebook ? 'Highlighted: Connected via Facebook' : 'Facebook platform'}
+          >
+            <FacebookIcon />
+            <span>Facebook</span>
+            {hasFacebook && <span className={styles.activePillFb}>Active</span>}
+          </span>
+        </div>
+
+        {/* Dual Channel Handles Section (Only shown when Signed In) */}
+        {isSignedIn ? (
+          <div className={styles.handlesContainer}>
+            <div
+              className={`${styles.handleBadgeWrapper} ${isYouTubeHighlighted ? styles.handleHighlightedYt : ''}`}
+              title="YouTube videos will be verified against this channel handle"
+            >
+              <YouTubeIcon className={styles.handlePlatformIcon} />
+              <span className={styles.handleLabel}>YouTube:</span>
+              <input
+                type="text"
+                placeholder="@ytChannel"
+                value={youtubeHandle}
+                onChange={(e) => handleSaveYoutubeHandle(e.target.value)}
+                className={styles.handleInput}
+                id="youtube-handle-input"
+              />
+            </div>
+
+            <div
+              className={`${styles.handleBadgeWrapper} ${isTikTokHighlighted ? styles.handleHighlightedTt : ''}`}
+              title="TikTok videos will be verified against this username"
+            >
+              <TikTokIcon className={styles.handlePlatformIcon} />
+              <span className={styles.handleLabel}>TikTok:</span>
+              <input
+                type="text"
+                placeholder="@tiktokUser"
+                value={tiktokHandle}
+                onChange={(e) => handleSaveTiktokHandle(e.target.value)}
+                className={styles.handleInput}
+                id="tiktok-handle-input"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className={styles.guestModeTag} title="Guest mode allows tracking any public video or reel without username verification">
+            <span className={styles.guestDot}></span>
+            <span>Guest: Any Public Link Allowed</span>
+          </div>
+        )}
 
         {/* Track Duration / Expiry Preset */}
         <div className={styles.durationWrapper}>
@@ -117,13 +299,13 @@ export default function PostForm({ onPostAdded }) {
             onChange={(e) => setDurationPreset(e.target.value)}
             className={styles.durationSelect}
           >
-            <option value="never">No Expiration (Always Track)</option>
+            <option value="never">No Expiration</option>
             <option value="1d">1 Day</option>
             <option value="3d">3 Days</option>
             <option value="7d">7 Days</option>
             <option value="14d">14 Days</option>
             <option value="30d">30 Days</option>
-            <option value="custom">Custom Date & Time…</option>
+            <option value="custom">Custom Date…</option>
           </select>
 
           {durationPreset === 'custom' && (
@@ -180,4 +362,4 @@ export default function PostForm({ onPostAdded }) {
       )}
     </div>
   )
-}
+}

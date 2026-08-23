@@ -184,6 +184,20 @@
   font-weight: 600;
 }
 
+.pillHighlighted {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.connectedDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 5px #10b981;
+  display: inline-block;
+}
+
 .pillCount {
   font-size: 10px;
   font-weight: 700;

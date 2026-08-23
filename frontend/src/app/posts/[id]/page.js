@@ -8,6 +8,7 @@ import {
 } from 'recharts'
 import { getPostThumbnail } from '../../lib/format'
 import { useTheme } from '../../lib/ThemeContext'
+import { apiFetch } from '../../lib/authSession'
 import ConfirmModal from '../../components/ConfirmModal'
 import EditExpiryModal from '../../components/EditExpiryModal'
 import styles from '../../styles/PostDetail.module.css'
@@ -73,7 +74,7 @@ export default function PostDetailPage() {
 
   const fetchData = () => {
     setLoading(true)
-    fetch(`/api/posts/${id}`)
+    apiFetch(`/api/posts/${id}`)
       .then(async (res) => {
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || json.message || 'Failed to load')
@@ -92,7 +93,7 @@ export default function PostDetailPage() {
   const handleDeletePost = async () => {
     setDeleting(true)
     try {
-      const res = await fetch(`/api/posts/${id}`, {
+      const res = await apiFetch(`/api/posts/${id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete post')
@@ -106,7 +107,7 @@ export default function PostDetailPage() {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const res = await fetch(`/api/posts/${id}/refresh`, { method: 'POST' })
+      const res = await apiFetch(`/api/posts/${id}/refresh`, { method: 'POST' })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || json.message || 'Failed to refresh')
       fetchData()
@@ -133,10 +134,10 @@ export default function PostDetailPage() {
   )
   if (!data) return null
 
-  const { post, latest, growth_percent, engagement_rate, snapshots } = data
-  const isTikTok = post.platform === 'tiktok'
-  const isYouTube = post.platform === 'youtube'
-  const isFacebook = post.platform === 'facebook'
+  const { post, latest, growth_percent, engagement_rate, snapshots = [], total_engagement } = data
+  const isTikTok = post?.platform === 'tiktok'
+  const isYouTube = post?.platform === 'youtube'
+  const isFacebook = post?.platform === 'facebook'
   const thumbnailUrl = getPostThumbnail(post)
 
   // YouTube does not track shares — calculate engagement honestly without shares for YouTube
@@ -348,22 +349,18 @@ export default function PostDetailPage() {
               </div>
             )}
 
-            {/* Engagement arc card */}
+            {/* Total Engagement & Interactions (Count, not %) */}
             <div className={`${styles.statCard} ${styles.statCardEngagement}`}>
-              {calculatedEngagement !== null ? (
-                <EngagementArc rate={calculatedEngagement} />
-              ) : (
-                <>
-                  <span className={styles.statLabel}>Engagement Rate</span>
-                  <span className={styles.statValue}>—</span>
-                </>
-              )}
+              <span className={styles.statLabel}>Total Engagements</span>
+              <span className={styles.statValue} style={{ fontSize: '28px', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+                {total_engagement !== undefined ? Number(total_engagement).toLocaleString() : ((latest.likes || 0) + (latest.comments || 0) + (latest.shares || 0)).toLocaleString()}
+              </span>
               <span className={styles.neutral}>
                 {isTikTok
-                  ? '(likes + comments + shares) ÷ views'
+                  ? 'Likes + Comments + Shares'
                   : isFacebook && latest.shares > 0
-                  ? '(likes + comments + shares) ÷ views'
-                  : '(likes + comments) ÷ views'}
+                  ? 'Likes + Comments + Shares'
+                  : 'Likes + Comments'}
               </span>
             </div>
           </div>

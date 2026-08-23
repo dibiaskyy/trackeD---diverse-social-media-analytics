@@ -128,6 +128,171 @@
   margin-top: 12px;
 }
 
+/* Auth / Account Section */
+.accountSection {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 12px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guestCard {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guestHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guestBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.guestDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.guestHint {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  line-height: 1.3;
+}
+
+.authBtnGroup {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.authSignInBtn {
+  flex: 1;
+  height: 30px;
+  background: var(--color-text-primary);
+  color: var(--color-background);
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.authSignInBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.authButtonsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.authSingleSignInBtn {
+  width: 100%;
+  height: 34px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.authSingleSignInBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-secondary);
+  transform: translateY(-1px);
+}
+
+.signedInCard {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.userName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userSyncBadge {
+  font-size: 10px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+}
+
+.logOutBtn {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  color: var(--color-text-tertiary);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.logOutBtn:hover {
+  background: rgba(248, 81, 73, 0.12);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  transform: scale(1.05);
+}
+
 .themeToggleBtn {
   width: 100%;
   height: 38px;
@@ -173,6 +338,16 @@
   letter-spacing: 0.06em;
   color: var(--color-text-tertiary);
   margin: 0 0 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.syncStatusTag {
+  color: #10b981;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: none;
 }
 
 .platformBadge {
@@ -185,11 +360,34 @@
   font-weight: 500;
   transition: all 0.2s ease;
   cursor: default;
+  border: 1px solid transparent;
 }
 
 .platformBadge:hover {
   background: var(--color-sidebar-hover);
   transform: translateX(2px);
+}
+
+.platformHighlightedTt {
+  background: rgba(0, 242, 254, 0.07);
+  border-color: rgba(0, 242, 254, 0.25);
+  font-weight: 600;
+}
+
+.platformHighlightedYt {
+  background: rgba(255, 0, 0, 0.07);
+  border-color: rgba(255, 0, 0, 0.25);
+  font-weight: 600;
+}
+
+.platformHighlightedFb {
+  background: rgba(24, 119, 242, 0.07);
+  border-color: rgba(24, 119, 242, 0.25);
+  font-weight: 600;
+}
+
+.platformMuted {
+  opacity: 0.5;
 }
 
 .platformStatus {
@@ -198,9 +396,24 @@
   opacity: 0.7;
 }
 
-.platformLocked {
-  color: var(--color-text-tertiary) !important;
-  opacity: 0.5;
+.platformActivePulse {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.platformActivePulseFb {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(24, 119, 242, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 /* Sidebar toast */

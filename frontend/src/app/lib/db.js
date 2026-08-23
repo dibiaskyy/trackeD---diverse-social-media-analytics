@@ -95,14 +95,22 @@ function writeJsonDb(data) {
 // Main DB Operations
 // ----------------------------------------------------
 
-export async function getAllPosts() {
+export async function getAllPosts(userId) {
   const db = getPool()
   if (db) {
     try {
       // Auto-prune expired track_until posts
       await db.execute('DELETE FROM tracked_posts WHERE track_until IS NOT NULL AND track_until < NOW()')
 
-      const [posts] = await db.execute('SELECT * FROM tracked_posts ORDER BY created_at DESC')
+      let query = 'SELECT * FROM tracked_posts'
+      const params = []
+      if (userId) {
+        query += ' WHERE user_id = ?'
+        params.push(userId)
+      }
+      query += ' ORDER BY created_at DESC'
+
+      const [posts] = await db.execute(query, params)
 
       if (posts.length === 0) return []
 
@@ -127,6 +135,7 @@ export async function getAllPosts() {
         const latest = snapMap[p.id] || null
         return {
           id: p.id,
+          user_id: p.user_id,
           platform: p.platform,
           post_url: p.post_url,
           caption: p.caption,
@@ -136,12 +145,12 @@ export async function getAllPosts() {
           posted_at: p.posted_at ? new Date(p.posted_at).toISOString() : null,
           latest: latest
             ? {
-                views: Number(latest.views || 0),
-                likes: Number(latest.likes || 0),
-                comments: Number(latest.comments || 0),
-                shares: Number(latest.shares || 0),
-                fetched_at: latest.fetched_at ? new Date(latest.fetched_at).toISOString() : null,
-              }
+              views: Number(latest.views || 0),
+              likes: Number(latest.likes || 0),
+              comments: Number(latest.comments || 0),
+              shares: Number(latest.shares || 0),
+              fetched_at: latest.fetched_at ? new Date(latest.fetched_at).toISOString() : null,
+            }
             : null,
         }
       })
@@ -153,10 +162,12 @@ export async function getAllPosts() {
 
   // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  return (jsonDb.posts || []).map((p) => {
+  const filtered = (jsonDb.posts || []).filter((p) => !userId || p.user_id === userId)
+  return filtered.map((p) => {
     const latest = p.snapshots && p.snapshots.length > 0 ? p.snapshots[p.snapshots.length - 1] : null
     return {
       id: p.id,
+      user_id: p.user_id,
       platform: p.platform,
       post_url: p.post_url,
       caption: p.caption,
@@ -166,12 +177,12 @@ export async function getAllPosts() {
       posted_at: p.posted_at,
       latest: latest
         ? {
-            views: Number(latest.views || 0),
-            likes: Number(latest.likes || 0),
-            comments: Number(latest.comments || 0),
-            shares: Number(latest.shares || 0),
-            fetched_at: latest.fetched_at,
-          }
+          views: Number(latest.views || 0),
+          likes: Number(latest.likes || 0),
+          comments: Number(latest.comments || 0),
+          shares: Number(latest.shares || 0),
+          fetched_at: latest.fetched_at,
+        }
         : null,
     }
   })
@@ -235,16 +246,17 @@ export async function getPostById(id) {
           },
           latest: latest
             ? {
-                views: latestViews,
-                likes: Number(latest.likes || 0),
-                comments: Number(latest.comments || 0),
-                shares: Number(latest.shares || 0),
-                fetched_at: latest.fetched_at ? new Date(latest.fetched_at).toISOString() : null,
-              }
+              views: latestViews,
+              likes: Number(latest.likes || 0),
+              comments: Number(latest.comments || 0),
+              shares: Number(latest.shares || 0),
+              fetched_at: latest.fetched_at ? new Date(latest.fetched_at).toISOString() : null,
+            }
             : null,
           views_1d_ago: dayAgo ? dayAgoViews : null,
           growth_percent: growth,
           engagement_rate: engagementRate,
+          total_engagement: latest ? (post.platform === 'youtube' ? Number(latest.likes || 0) + Number(latest.comments || 0) : Number(latest.likes || 0) + Number(latest.comments || 0) + Number(latest.shares || 0)) : 0,
           snapshots: snapshots.map((s) => ({
             views: Number(s.views || 0),
             likes: Number(s.likes || 0),
@@ -308,12 +320,12 @@ export async function getPostById(id) {
     },
     latest: latest
       ? {
-          views: Number(latest.views || 0),
-          likes: Number(latest.likes || 0),
-          comments: Number(latest.comments || 0),
-          shares: Number(latest.shares || 0),
-          fetched_at: latest.fetched_at,
-        }
+        views: Number(latest.views || 0),
+        likes: Number(latest.likes || 0),
+        comments: Number(latest.comments || 0),
+        shares: Number(latest.shares || 0),
+        fetched_at: latest.fetched_at,
+      }
       : null,
     views_1d_ago: dayAgo ? dayAgoViews : null,
     growth_percent: growth,
@@ -328,16 +340,19 @@ export async function getPostById(id) {
   }
 }
 
-export async function createPost({ platform, post_url, caption, thumbnail_url, track_until, posted_at, stats }) {
+export async function createPost({ platform, post_url, caption, thumbnail_url, track_until, posted_at, stats, user_id = 'anonymous_default' }) {
   const db = getPool()
 
   if (db) {
     try {
       const trimmedUrl = post_url.trim()
-      const [existing] = await db.execute('SELECT id FROM tracked_posts WHERE post_url = ?', [trimmedUrl])
+      const [existing] = await db.execute(
+        'SELECT id FROM tracked_posts WHERE post_url = ? AND user_id = ?',
+        [trimmedUrl, user_id]
+      )
 
       if (existing.length > 0) {
-        throw new Error('This video URL is already being tracked.')
+        throw new Error('This video URL is already in your tracked list.')
       }
 
       const postCaption = caption || stats?.caption || null
@@ -346,9 +361,9 @@ export async function createPost({ platform, post_url, caption, thumbnail_url, t
       const postedAtDate = posted_at || stats?.posted_at ? new Date(posted_at || stats?.posted_at) : null
 
       const [result] = await db.execute(
-        `INSERT INTO tracked_posts (platform, post_url, caption, thumbnail_url, track_until, posted_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-        [platform, trimmedUrl, postCaption, postThumbnail, trackUntilDate, postedAtDate]
+        `INSERT INTO tracked_posts (user_id, platform, post_url, caption, thumbnail_url, track_until, posted_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [user_id, platform, trimmedUrl, postCaption, postThumbnail, trackUntilDate, postedAtDate]
       )
 
       const newId = result.insertId
@@ -363,7 +378,7 @@ export async function createPost({ platform, post_url, caption, thumbnail_url, t
 
       return await getPostById(newId)
     } catch (err) {
-      if (err.message.includes('already being tracked')) throw err
+      if (err.message.includes('already in your tracked list') || err.message.includes('already being tracked')) throw err
       console.warn('MySQL createPost failed:', err.message)
       if (process.env.VERCEL) {
         throw new Error('Database connection unavailable on server. Please check your database settings.')
@@ -373,9 +388,11 @@ export async function createPost({ platform, post_url, caption, thumbnail_url, t
 
   // Localhost JSON fallback
   const jsonDb = readJsonDb()
-  const existing = (jsonDb.posts || []).find((p) => p.post_url.trim().toLowerCase() === post_url.trim().toLowerCase())
+  const existing = (jsonDb.posts || []).find(
+    (p) => p.post_url.trim().toLowerCase() === post_url.trim().toLowerCase() && p.user_id === user_id
+  )
   if (existing) {
-    throw new Error('This video URL is already being tracked.')
+    throw new Error('This video URL is already in your tracked list.')
   }
 
   const maxId = (jsonDb.posts || []).reduce((max, p) => Math.max(max, p.id || 0), 0)
@@ -383,23 +400,24 @@ export async function createPost({ platform, post_url, caption, thumbnail_url, t
 
   const newPost = {
     id: newId,
+    user_id,
     platform,
     post_url,
     caption: caption || stats?.caption || null,
     thumbnail_url: thumbnail_url || stats?.thumbnail_url || null,
     track_until: track_until ? new Date(track_until).toISOString() : null,
     created_at: new Date().toISOString(),
-    posted_at: posted_at || stats?.posted_at || null,
+    posted_at: postedAtDate ? postedAtDate.toISOString() : null,
     snapshots: stats
       ? [
-          {
-            views: stats.views || 0,
-            likes: stats.likes || 0,
-            comments: stats.comments || 0,
-            shares: stats.shares || 0,
-            fetched_at: new Date().toISOString(),
-          },
-        ]
+        {
+          views: stats.views || 0,
+          likes: stats.likes || 0,
+          comments: stats.comments || 0,
+          shares: stats.shares || 0,
+          fetched_at: new Date().toISOString(),
+        },
+      ]
       : [],
   }
 
