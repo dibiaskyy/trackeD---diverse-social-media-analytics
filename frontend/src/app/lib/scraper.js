@@ -132,30 +132,51 @@ async function scrapeYouTubeDirect(url) {
 
 function parseYouTubeScraper(url, html, meta = {}) {
   let views = 0
-  const viewMatch = html.match(/"viewCount":\s*"?(\d+)"?/)
-  if (viewMatch) {
-    views = parseInt(viewMatch[1], 10)
-  } else if (meta.domViews) {
-    views = parseFormattedCount(meta.domViews)
-  } else {
-    const metaView = html.match(/itemprop="interactionCount"\s+content="(\d+)"/i)
-    if (metaView) views = parseInt(metaView[1], 10)
+  let likes = 0
+  let comments = 0
+  let caption = meta.domCaption || null
+  let author = meta.domAuthor || null
+  let authorHandle = null
+
+  // 1. Try parsing ytInitialPlayerResponse JSON block directly
+  try {
+    const playerMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});(?:var\s|window\[|<)/s)
+    if (playerMatch) {
+      const pData = JSON.parse(playerMatch[1])
+      if (pData.videoDetails) {
+        if (pData.videoDetails.viewCount) views = parseInt(pData.videoDetails.viewCount, 10) || 0
+        if (pData.videoDetails.title && !caption) caption = pData.videoDetails.title
+        if (pData.videoDetails.author && !author) author = pData.videoDetails.author
+      }
+    }
+  } catch {}
+
+  // 2. Direct regex extraction for views
+  if (views === 0) {
+    const viewMatch = html.match(/"viewCount":\s*"?(\d+)"?/) || html.match(/"views":\s*\{"simpleText":\s*"([\d,.]+[KkMmBb]?)\s*views?"\}/i)
+    if (viewMatch) {
+      views = parseFormattedCount(viewMatch[1])
+    } else if (meta.domViews) {
+      views = parseFormattedCount(meta.domViews)
+    } else {
+      const metaView = html.match(/itemprop="interactionCount"\s+content="(\d+)"/i)
+      if (metaView) views = parseInt(metaView[1], 10)
+    }
   }
 
-  let likes = 0
+  // 3. Direct regex extraction for likes
   if (meta.domLikes) {
     likes = parseFormattedCount(meta.domLikes)
   } else {
-    const likeMatch = html.match(/"likeCount":\s*"?(\d+)"?/)
+    const likeMatch = html.match(/"likeCount":\s*"?(\d+)"?/) || html.match(/"label":\s*"([\d,.]+[KkMmBb]?)\s+likes"/i)
     if (likeMatch) {
-      likes = parseInt(likeMatch[1], 10)
+      likes = parseFormattedCount(likeMatch[1])
     } else {
       const accessLike = html.match(/"accessibilityData":\{"label":"([\d,.]+[KkMmBb]?)\s+likes"\}/i)
       if (accessLike) likes = parseFormattedCount(accessLike[1])
     }
   }
 
-  let comments = 0
   if (meta.domComments) {
     comments = parseFormattedCount(meta.domComments)
   } else {
@@ -184,16 +205,12 @@ function parseYouTubeScraper(url, html, meta = {}) {
     }
   }
 
-  let caption = meta.domCaption || null
   if (!caption) {
     const titleMatch = html.match(/<meta\s+name="title"\s+content="([^"]+)"/i) || html.match(/<title>([^<]+)<\/title>/i)
     if (titleMatch) {
       caption = titleMatch[1].replace(/ - YouTube$/i, '').trim()
     }
   }
-
-  let author = meta.domAuthor || null
-  let authorHandle = null
 
   const handleMatch = html.match(/"canonicalBaseUrl":\s*"\/@([^"]+)"/) || html.match(/"navigationEndpoint":\{"browseEndpoint":\{"canonicalBaseUrl":"\/@([^"]+)"/)
   if (handleMatch) {
