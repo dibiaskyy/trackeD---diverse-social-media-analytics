@@ -336,7 +336,8 @@ button[data-provider="google"]:hover {
 
 /* Ensure Facebook icon and text are aligned horizontally */
 .cl-socialButtonsIconButton__facebook,
-.cl-socialButtonsIconButton[data-provider="facebook"] {
+.cl-socialButtonsIconButton[data-provider="facebook"],
+.cl-socialButtonsIconButton[data-provider="oauth_facebook"] {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -345,7 +346,8 @@ button[data-provider="google"]:hover {
 }
 
 .cl-socialButtonsIconButton__facebook::after,
-.cl-socialButtonsIconButton[data-provider="facebook"]::after {
+.cl-socialButtonsIconButton[data-provider="facebook"]::after,
+.cl-socialButtonsIconButton[data-provider="oauth_facebook"]::after {
   content: "Continue with Facebook" !important;
   color: #ffffff !important;
   font-weight: 600 !important;
@@ -358,6 +360,38 @@ button[data-provider="google"]:hover {
 .cl-socialButtonsIconButton[data-provider="facebook"] svg,
 .cl-socialButtonsProviderIcon__facebook,
 .cl-socialButtonsIconButton__facebook img {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Ensure Google icon and text are aligned horizontally */
+.cl-socialButtonsIconButton__google,
+.cl-socialButtonsIconButton[data-provider="google"],
+.cl-socialButtonsIconButton[data-provider="oauth_google"] {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+.cl-socialButtonsIconButton__google::after,
+.cl-socialButtonsIconButton[data-provider="google"]::after,
+.cl-socialButtonsIconButton[data-provider="oauth_google"]::after {
+  content: "Continue with Google" !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  display: inline-block !important;
+  white-space: nowrap !important;
+}
+
+.cl-socialButtonsIconButton__google svg,
+.cl-socialButtonsIconButton[data-provider="google"] svg,
+.cl-socialButtonsProviderIcon__google,
+.cl-socialButtonsIconButton__google img {
   width: 18px !important;
   height: 18px !important;
   margin: 0 !important;
