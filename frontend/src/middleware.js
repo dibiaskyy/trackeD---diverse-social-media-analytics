@@ -8,13 +8,25 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth()
-  const hasGuestSession = req.cookies.get('tracked_guest_session')?.value === 'true'
+  try {
+    let userId = null
+    try {
+      const session = await auth()
+      userId = session?.userId
+    } catch {
+      // Auth context fallback
+    }
 
-  // If not signed in and no guest session cookie is present, redirect to /welcome
-  if (!userId && !hasGuestSession && !isPublicRoute(req)) {
-    const welcomeUrl = new URL('/welcome', req.url)
-    return NextResponse.redirect(welcomeUrl)
+    const hasGuestSession = req.cookies.get('tracked_guest_session')?.value === 'true'
+
+    // If not signed in and no guest session cookie is present, redirect to /welcome
+    if (!userId && !hasGuestSession && !isPublicRoute(req)) {
+      const welcomeUrl = req.nextUrl.clone()
+      welcomeUrl.pathname = '/welcome'
+      return NextResponse.redirect(welcomeUrl)
+    }
+  } catch (err) {
+    console.error('Middleware safe execution error:', err)
   }
 })
 
