@@ -1,59 +1,39 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-const isPublicRoute = createRouteMatcher([
-  '/welcome(.*)',
-  '/sso-callback(.*)',
-  '/api(.*)'
-])
+export function middleware(req) {
+  const { pathname } = req.nextUrl
 
-export default async function middleware(req, event) {
-  try {
-    const hasClerkKeys = Boolean(
-      process.env.CLERK_SECRET_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-    )
-
-    if (hasClerkKeys) {
-      const clerkHandler = clerkMiddleware(async (auth, request) => {
-        try {
-          const session = await auth()
-          const userId = session?.userId
-          const hasGuestSession = request.cookies.get('tracked_guest_session')?.value === 'true'
-
-          if (!userId && !hasGuestSession && !isPublicRoute(request)) {
-            const welcomeUrl = request.nextUrl.clone()
-            welcomeUrl.pathname = '/welcome'
-            return NextResponse.redirect(welcomeUrl)
-          }
-        } catch {
-          // Ignore auth session retrieval error
-        }
-      })
-
-      return await clerkHandler(req, event)
-    }
-
-    // Fallback if Clerk keys are missing during build/runtime
-    const hasGuestSession = req.cookies.get('tracked_guest_session')?.value === 'true'
-    if (!hasGuestSession && !isPublicRoute(req)) {
-      const welcomeUrl = req.nextUrl.clone()
-      welcomeUrl.pathname = '/welcome'
-      return NextResponse.redirect(welcomeUrl)
-    }
-
-    return NextResponse.next()
-  } catch (err) {
-    console.error('Middleware execution error caught:', err)
+  // 1. Allow public routes and internal APIs
+  if (
+    pathname.startsWith('/welcome') ||
+    pathname.startsWith('/sso-callback') ||
+    pathname.startsWith('/api')
+  ) {
     return NextResponse.next()
   }
+
+  // 2. Check for active Clerk Auth session or Guest session cookies
+  const hasClerkSession = Boolean(
+    req.cookies.get('__session')?.value ||
+    req.cookies.get('__client_uat')?.value
+  )
+  const hasGuestSession = req.cookies.get('tracked_guest_session')?.value === 'true'
+
+  // 3. If unauthenticated, redirect to the welcome page
+  if (!hasClerkSession && !hasGuestSession) {
+    const welcomeUrl = req.nextUrl.clone()
+    welcomeUrl.pathname = '/welcome'
+    return NextResponse.redirect(welcomeUrl)
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    // Skip Next.js internals, images, and static assets
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)).*)',
   ],
 }
+
 
