@@ -63,15 +63,16 @@ export default function Dashboard() {
     )
   )
 
+  const hasGuestSession =
+    typeof document !== 'undefined' &&
+    (document.cookie.includes('tracked_guest_session=true') ||
+     localStorage.getItem('tracked_welcome_dismissed') === 'true')
+
   useEffect(() => {
-    if (isAuthLoaded && !isSignedIn) {
-      const hasGuestCookie = typeof document !== 'undefined' && document.cookie.includes('tracked_guest_session=true')
-      const dismissed = typeof window !== 'undefined' && localStorage.getItem('tracked_welcome_dismissed')
-      if (!hasGuestCookie && !dismissed) {
-        router.push('/welcome')
-      }
+    if (isAuthLoaded && !isSignedIn && !hasGuestSession) {
+      router.replace('/welcome')
     }
-  }, [isAuthLoaded, isSignedIn, router])
+  }, [isAuthLoaded, isSignedIn, hasGuestSession, router])
 
   useEffect(() => {
     apiFetch('/api/posts')
@@ -169,6 +170,17 @@ export default function Dashboard() {
   const tiktokCount = postList.filter((p) => p.platform === 'tiktok').length
   const youtubeCount = postList.filter((p) => p.platform === 'youtube').length
   const facebookCount = postList.filter((p) => p.platform === 'facebook').length
+
+  if (!isAuthLoaded || (!isSignedIn && !hasGuestSession)) {
+    return (
+      <main className={styles.page} style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={styles.loadingState}>
+          <span className={styles.spinner} />
+          <span>Loading trackeD…</span>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className={styles.page}>
