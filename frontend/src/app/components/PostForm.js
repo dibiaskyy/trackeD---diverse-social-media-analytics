@@ -132,6 +132,20 @@ export default function PostForm({ onPostAdded }) {
       return
     }
 
+    // Strict Provider Platform Approval Enforcement
+    if (isSignedIn) {
+      if (hasGoogle && !hasFacebook && detectedPlatform === 'facebook') {
+        setError('Your account is signed in with Google/Gmail. Only YouTube and TikTok links are approved. To track Facebook posts, please sign in with Facebook.')
+        return
+      }
+
+      if (hasFacebook && !hasGoogle && (detectedPlatform === 'youtube' || detectedPlatform === 'tiktok')) {
+        const targetName = detectedPlatform === 'youtube' ? 'YouTube' : 'TikTok'
+        setError(`Your account is signed in with Facebook. Only Facebook links are approved. To track ${targetName} posts, please sign in with Google/Gmail.`)
+        return
+      }
+    }
+
     // Select the appropriate creator handle based on target platform ONLY if user is signed in
     let targetHandle = undefined
     if (isSignedIn) {
@@ -153,6 +167,7 @@ export default function PostForm({ onPostAdded }) {
           url: trimmed,
           track_until: trackUntil,
           creator_handle: targetHandle,
+          auth_provider: hasGoogle && !hasFacebook ? 'google' : hasFacebook && !hasGoogle ? 'facebook' : 'all',
         }),
       })
 
@@ -177,6 +192,18 @@ export default function PostForm({ onPostAdded }) {
   const isYouTubeHighlighted = hasGoogle || (!isSignedIn && !hasFacebook)
   const isFacebookHighlighted = hasFacebook || (!isSignedIn && !hasGoogle)
 
+  const isTikTokLocked = isSignedIn && hasFacebook && !hasGoogle
+  const isYouTubeLocked = isSignedIn && hasFacebook && !hasGoogle
+  const isFacebookLocked = isSignedIn && hasGoogle && !hasFacebook
+
+  const inputPlaceholder = !isSignedIn
+    ? 'Paste a TikTok, YouTube, or Facebook video/reel link…'
+    : hasGoogle && !hasFacebook
+    ? 'Paste a YouTube or TikTok video link (Google account connected)…'
+    : hasFacebook && !hasGoogle
+    ? 'Paste a Facebook reel/video link (Facebook account connected)…'
+    : 'Paste a TikTok, YouTube, or Facebook video/reel link…'
+
   return (
     <div className={styles.wrapper}>
       {/* Top Banner indicating Provider Sync */}
@@ -186,17 +213,17 @@ export default function PostForm({ onPostAdded }) {
             <span className={styles.authPulseDot}></span>
             {hasGoogle && !hasFacebook && (
               <span>
-                <strong>Google Account Connected:</strong> YouTube & TikTok channels ready to track
+                <strong>Google Account Connected:</strong> Only YouTube & TikTok links approved
               </span>
             )}
             {hasFacebook && !hasGoogle && (
               <span>
-                <strong>Facebook Account Connected:</strong> Facebook Reels & Videos ready to track
+                <strong>Facebook Account Connected:</strong> Only Facebook Reels & Videos approved
               </span>
             )}
             {hasGoogle && hasFacebook && (
               <span>
-                <strong>Google & Facebook Connected:</strong> All platforms active & ready to track
+                <strong>Google & Facebook Connected:</strong> All platforms active & approved
               </span>
             )}
             {!hasGoogle && !hasFacebook && (
@@ -209,37 +236,40 @@ export default function PostForm({ onPostAdded }) {
       )}
 
       <div className={styles.topRow}>
-        {/* Platform Status Badges with Provider-Based Highlighting */}
+        {/* Platform Status Badges with Provider-Based Highlighting & Lock State */}
         <div className={styles.platformHints}>
           <span
-            className={`${styles.hint} ${isTikTokHighlighted ? styles.hintHighlightedTikTok : styles.hintMuted}`}
-            title={hasGoogle ? 'Highlighted: Connected via Google' : 'TikTok platform'}
+            className={`${styles.hint} ${isTikTokHighlighted ? styles.hintHighlightedTikTok : isTikTokLocked ? styles.hintDisabled : styles.hintMuted}`}
+            title={isTikTokLocked ? 'Locked: Requires Google Login' : hasGoogle ? 'Approved: Connected via Google' : 'TikTok platform'}
           >
             <TikTokIcon />
             <span>TikTok</span>
-            {hasGoogle && <span className={styles.activePill}>Active</span>}
+            {hasGoogle && <span className={styles.activePill}>Approved</span>}
+            {isTikTokLocked && <span className={styles.lockedPill}>Locked</span>}
           </span>
 
           <span className={styles.hintSep}>·</span>
 
           <span
-            className={`${styles.hint} ${isYouTubeHighlighted ? styles.hintHighlightedYouTube : styles.hintMuted}`}
-            title={hasGoogle ? 'Highlighted: Connected via Google' : 'YouTube platform'}
+            className={`${styles.hint} ${isYouTubeHighlighted ? styles.hintHighlightedYouTube : isYouTubeLocked ? styles.hintDisabled : styles.hintMuted}`}
+            title={isYouTubeLocked ? 'Locked: Requires Google Login' : hasGoogle ? 'Approved: Connected via Google' : 'YouTube platform'}
           >
             <YouTubeIcon />
             <span>YouTube</span>
-            {hasGoogle && <span className={styles.activePill}>Active</span>}
+            {hasGoogle && <span className={styles.activePill}>Approved</span>}
+            {isYouTubeLocked && <span className={styles.lockedPill}>Locked</span>}
           </span>
 
           <span className={styles.hintSep}>·</span>
 
           <span
-            className={`${styles.hint} ${isFacebookHighlighted ? styles.hintHighlightedFacebook : styles.hintMuted}`}
-            title={hasFacebook ? 'Highlighted: Connected via Facebook' : 'Facebook platform'}
+            className={`${styles.hint} ${isFacebookHighlighted ? styles.hintHighlightedFacebook : isFacebookLocked ? styles.hintDisabled : styles.hintMuted}`}
+            title={isFacebookLocked ? 'Locked: Requires Facebook Login' : hasFacebook ? 'Approved: Connected via Facebook' : 'Facebook platform'}
           >
             <FacebookIcon />
             <span>Facebook</span>
-            {hasFacebook && <span className={styles.activePillFb}>Active</span>}
+            {hasFacebook && <span className={styles.activePillFb}>Approved</span>}
+            {isFacebookLocked && <span className={styles.lockedPill}>Locked</span>}
           </span>
         </div>
 
@@ -329,7 +359,7 @@ export default function PostForm({ onPostAdded }) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Paste a TikTok, YouTube, or Facebook video/reel link…"
+            placeholder={inputPlaceholder}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onFocus={() => setFocused(true)}

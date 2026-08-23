@@ -33,6 +33,21 @@ export async function POST(req) {
       )
     }
 
+    // Provider Platform Approval Enforcement
+    const authProvider = body.auth_provider
+    if (authProvider === 'google' && platform === 'facebook') {
+      return NextResponse.json(
+        { error: 'Your account is connected with Google/Gmail. Only YouTube and TikTok links are approved for this account.' },
+        { status: 422 }
+      )
+    }
+    if (authProvider === 'facebook' && (platform === 'youtube' || platform === 'tiktok')) {
+      return NextResponse.json(
+        { error: 'Your account is connected with Facebook. Only Facebook links are approved for this account.' },
+        { status: 422 }
+      )
+    }
+
     let stats = null
     try {
       stats = await scrapeUrl(url)
